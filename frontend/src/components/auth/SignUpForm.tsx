@@ -200,9 +200,10 @@ export default function SignUpForm() {
                 label="Date Joined"
                 id="date-joined"
                 defaultDate={data.date_joined}
-                onChange={(dates, currentDateString) =>
-                  handleChange("date_joined", currentDateString)
-                }
+                onChange={(dates, currentDateString) => {
+                  console.log(dates);
+                  handleChange("date_joined", currentDateString);
+                }}
               />
 
 

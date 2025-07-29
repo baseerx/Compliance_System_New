@@ -40,7 +40,7 @@ export default function IndividualAttendance() {
     "Annual Leave",
     "Maternity Leave",
     "External Meeting",
-    "Official Leave",
+    "Official Work",
     "Umrah Leave",
     "Hajj Leave",
     "Recreational Leave",

@@ -31,7 +31,7 @@ type AttendanceRow = {
     status?: string;
 };
 
-const SDXP_URL = import.meta.env.VITE_SHIFT_URL;
+
 
 export default function ShiftAttendance() {
   const [attendancedata, setAttendanceData] = useState<AttendanceRow[]>([]);
