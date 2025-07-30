@@ -48,7 +48,7 @@ export default function DetailedReport() {
         fromdate: fromdate,
         todate: todate,
       });
-
+       
       // Ensure response.data is an array and format timestamp
       const cleanedData: AttendanceRow[] = response.data.map((item: any) => {
           const picked = {
@@ -66,7 +66,7 @@ export default function DetailedReport() {
                 ? moment(item.checkin_time).format('YYYY-MM-DD HH:mm:ss')
                 : "-",
             timestamp: moment(item.timestamp).format('DD-MM-YYYY'),
-            status: item.checkin_time !== '-' ? item.late : "-",
+            status: item.late,
           };
         if (picked.timestamp && typeof picked.timestamp === "string") {
           picked.timestamp = picked.timestamp.replace("T", " ");
@@ -117,12 +117,12 @@ const columns: ColumnDef<AttendanceRow>[] = [
         header: "Status",
         cell: ({ getValue }) => {
             const value = getValue<string>();
+         
             const color =
                 value?.toLowerCase() === "absent"
                     ? "inline-flex items-center px-6 py-0.5 justify-center gap-1 rounded-full font-semibold text-theme-lg bg-warning-50 text-warning-600 dark:bg-warning-500/15 dark:text-warning-500"
-                    : value?.toLowerCase() === "present"
-                    ? "inline-flex items-center px-6 py-0.5 justify-center gap-1 rounded-full font-semibold text-theme-lg bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500"
-                    : "-";
+                    :  "inline-flex items-center px-6 py-0.5 justify-center gap-1 rounded-full font-semibold text-theme-lg bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500"
+                 
             return <span className={color}>{value}</span>;
         }
     }

@@ -531,10 +531,10 @@ class AttendanceView:
                                         AND CAST(start_date AS DATE) <= CAST(:att_date AS DATE)
                                         AND CAST(end_date AS DATE) >= CAST(:att_date AS DATE)
                                     """), {"erp_id": row.erp_id, "att_date": row.the_date}).first()
-
-                if row.the_date is not None:
+            
+                if row.checkin_time is not None:
                     flag = 'Present'
-                elif row.the_date:
+                elif row.checkin_time is None and row.checkout_time is None:
                     if leave_result:
                         flag = leave_result.leave_type
                     elif official_work:
@@ -548,7 +548,8 @@ class AttendanceView:
                             flag = holiday_result.name
                         else:
                             flag = 'Absent'
-
+                if row.erp_id==471:
+                    print(flag)
                 records.append({
                     'erp_id': row.erp_id,
                     'name': row.name,
@@ -558,7 +559,7 @@ class AttendanceView:
                     'checkout_time': row.checkout_time if row.checkout_time is not None else '-',
                     'checkin_time': row.checkin_time if row.checkin_time is not None else '-',
                     'timestamp': row.the_date,
-                    'late': '-' if flag=='Absent' else flag, 
+                    'late':  flag, 
                 })
             return JsonResponse(records, safe=False)
         finally:
