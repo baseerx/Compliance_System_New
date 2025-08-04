@@ -18,6 +18,7 @@ class Employees(models.Model):
 
     class Meta:
         db_table = 'employees'
+        managed=True
         
 class Users(models.Model):
     uid = models.AutoField(primary_key=True)

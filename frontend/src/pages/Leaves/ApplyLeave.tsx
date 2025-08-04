@@ -14,7 +14,6 @@ import Button from "../../components/ui/button/Button";
 import Label from "../../components/form/Label";
 import Select from "../../components/form/Select";
 import TextArea from "../../components/form/input/TextArea";
-import Radio from "../../components/form/input/Radio";
 
 type AttendanceRow = {
   id?: number;
@@ -23,14 +22,16 @@ type AttendanceRow = {
   leave_type: string;
   start_date: string;
   end_date: string;
+  head?: any;
   reason: string;
-  status: string;
+  status?: string;
   created_at?: string;
 };
 
 export default function IndividualAttendance() {
   const [leaves, setLeaves] = useState<AttendanceRow[]>([]);
-
+  const user= JSON.parse(localStorage.getItem("user") || "{}");
+ 
   const [options, setOptions] = useState<{ label: string; value: string }[]>(
     []
   );
@@ -55,13 +56,36 @@ export default function IndividualAttendance() {
     fetchEmployeesOptions();
     getEmployeesLeaves();
   }, []);
-
+    const handleApproveLeave = async (id: any) => {
+        const action = id.toString().split('-')[1];
+        const empid = parseInt(id.toString().split('-')[0]);
+ 
+        try {
+        
+      if (!empid || !action) {
+          toast.error("Invalid leave request ID or action");
+          return;
+            }
+            
+      if (window.confirm(`Are you sure you want to ${action} this leave?`)) {
+        const response = await axios.post("/leaves/approve/", { recordid: Number(empid), action: action });
+        console.log("Leave approval response:", response.data);
+        getEmployeesLeaves();
+        toast.success("Leave approved successfully");
+      }
+    } catch (error) {
+      console.error("Error approving leave:", error);
+      toast.error("Failed to approve leave");
+    }
+    };
+    
   const [data, setData] = useState<AttendanceRow>({
     erp_id: 0,
     employee_id: 0,
     leave_type: "",
     reason: "",
-    status: "",
+    status: "pending",
+    head: "",
     start_date: moment().format("YYYY-MM-DD").toString(),
     end_date: moment().format("YYYY-MM-DD").toString(),
   });
@@ -70,15 +94,16 @@ export default function IndividualAttendance() {
     employee_id: "",
     leave_type: "",
     reason: "",
+    head: "",
     status: "",
     start_date: "",
     end_date: "",
   });
 
   const getEmployeesLeaves = async () => {
-    try {
-      const response = await axios.get("/leaves/get/");
-
+      try {
+        
+      const response = await axios.get(`/leaves/get/${user.erpid}/`);
       const cleanedData: AttendanceRow[] = response.data.leaves.map(
         (item: any) => {
           const picked = _.pick(item, [
@@ -88,6 +113,7 @@ export default function IndividualAttendance() {
             "erp_id",
             "leave_type",
             "start_date",
+            "head_erpid",
             "end_date",
             "reason",
             "status",
@@ -102,50 +128,80 @@ export default function IndividualAttendance() {
       toast.error("Failed to load employee leaves");
     }
   };
-  const columns: ColumnDef<AttendanceRow>[] = [
+const columns: ColumnDef<AttendanceRow>[] = [
     {
-      header: "ERP ID",
-      accessorKey: "erp_id",
+        header: "ERP ID",
+        accessorKey: "erp_id",
     },
     {
-      header: "Name",
-      accessorKey: "employee_name",
+        header: "Head ERP ID",
+        accessorKey: "head_erpid",
+        
     },
     {
-      header: "Employee ID",
-      accessorKey: "employee_id",
+        header: "Name",
+        accessorKey: "employee_name",
     },
     {
-      header: "Leave Type",
-      accessorKey: "leave_type",
+        header: "Employee ID",
+        accessorKey: "employee_id",
     },
     {
-      header: "Start Date",
-      accessorKey: "start_date",
+        header: "Leave Type",
+        accessorKey: "leave_type",
     },
     {
-      header: "End Date",
-      accessorKey: "end_date",
+        header: "Start Date",
+        accessorKey: "start_date",
     },
     {
-      header: "Reason",
-      accessorKey: "reason",
+        header: "End Date",
+        accessorKey: "end_date",
     },
     {
-      header: "Status",
-      accessorKey: "status",
-      cell: ({ getValue }) => {
-        const value = getValue<string>();
-        const color =
-          value?.toLowerCase() === "rejected"
-            ? "inline-flex items-center px-6 py-0.5 justify-center gap-1 rounded-full font-semibold text-theme-lg bg-warning-50 text-warning-600 dark:bg-warning-500/15 dark:text-warning-500"
-            : value?.toLowerCase() === "approved"
-            ? "inline-flex items-center px-6 py-0.5 justify-center gap-1 rounded-full font-semibold text-theme-lg bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500"
-            : "";
-        return <span className={color}>{value}</span>;
-      },
+        header: "Reason",
+        accessorKey: "reason",
     },
-  ];
+    {
+        header: "Status",
+        accessorKey: "status",
+        cell: ({ getValue }) => {
+            const value = getValue<string>();
+            const color =
+                value?.toLowerCase() === "pending" || value?.toLowerCase() === "rejected"
+                    ? "inline-flex items-center px-6 py-0.5 justify-center gap-1 rounded-full font-semibold text-theme-lg bg-warning-50 text-warning-600 dark:bg-warning-500/15 dark:text-warning-500"
+                    : value?.toLowerCase() === "approved"
+                    ? "inline-flex items-center px-6 py-0.5 justify-center gap-1 rounded-full font-semibold text-theme-lg bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500"
+                    : "";
+            return <span className={color}>{value}</span>;
+        },
+    },
+    // Only show action columns if status is pending
+    {
+        header: "Actions",
+        id: "actions-approve",
+        cell: ({ row }) =>
+            row.original.status?.toLowerCase() === "pending" && row.original.head_erpid === user.erpid ? (
+              
+                <div className="flex gap-2">
+                    <Button
+                        size="xs"
+                        variant="primary"
+                        onClick={() => handleApproveLeave(`${row.original.id?.toString()}-approve`)}
+                    >
+                        Approve
+                    </Button>
+                    <Button
+                        size="xs"
+                        variant="outline"
+                        onClick={() => handleApproveLeave(`${row.original.id?.toString()}-reject`)}
+                    >
+                        Reject
+                    </Button>
+                </div>
+            ) : null,
+    }
+];
   const fetchEmployeesOptions = async () => {
     try {
       const response = await axios.get("/users/employees/");
@@ -168,20 +224,20 @@ export default function IndividualAttendance() {
         !data.start_date ||
         !data.end_date ||
         !data.reason ||
-        !data.status
+        !data.head
       ) {
         setFieldError({
           erp_id: !data.erp_id ? "ERP ID is required" : "",
           employee_id: !data.employee_id ? "Employee ID is required" : "",
           leave_type: !data.leave_type ? "Leave Type is required" : "",
           reason: !data.reason ? "Reason is required" : "",
-          status: !data.status ? "Status is required" : "",
+          head: !data.head ? "Section Head is required" : "",
           start_date: !data.start_date ? "Start Date is required" : "",
           end_date: !data.end_date ? "End Date is required" : "",
         });
         return;
       }
-
+    
       const response = await axios.post("/leaves/apply/", data);
       console.log("Leave application response:", response.data);
       setData({
@@ -278,6 +334,31 @@ export default function IndividualAttendance() {
                 }}
               />
             </div>
+            <div className="flex justify-center items-center gap-4 my-3">
+              <div className="w-full">
+                <SearchableDropdown
+                  options={options}
+                  placeholder="select approving authority"
+                  label="Section Head"
+                  id="head-dropdown"
+                  value={
+                    options.find(
+                      (opt) =>
+                        opt.value.split('-')[0] === `${data.head}`
+                    )?.value || ""
+                  }
+                  onChange={(value) => {
+                    const vals = value?.toString().split("-");
+                    setData({
+                      ...data,
+                      head: parseInt(vals[0]),
+                    });
+                  }}
+                  error={!!fielderror.head}
+                  hint={fielderror.head}
+                />
+              </div>
+            </div>
             <div className="my-5">
               <TextArea
                 value={data.reason}
@@ -287,38 +368,6 @@ export default function IndividualAttendance() {
                 error={!!fielderror.reason}
                 hint={fielderror.reason}
               />
-            </div>
-            <div className="flex justify-center items-center gap-4 my-3">
-              <Radio
-                id="status-approved"
-                name="leave-status"
-                value="approved"
-                checked={data.status === "approved"}
-                label="Approved"
-                onChange={() => setData({ ...data, status: "approved" })}
-              />
-              <Radio
-                id="status-rejected"
-                name="leave-status"
-                value="rejected"
-                checked={data.status === "rejected"}
-                label="Rejected"
-                onChange={() => setData({ ...data, status: "rejected" })}
-              />
-              <Radio
-                id="status-pending"
-                name="leave-status"
-                value="pending"
-                checked={data.status === "pending"}
-                label="Pending"
-                onChange={() => setData({ ...data, status: "pending" })}
-              />
-
-              {!!fielderror.status && (
-                <p className="mt-1 text-xs text-red-600 dark:text-red-400">
-                  {fielderror.status}
-                </p>
-              )}
             </div>
           </div>
           <div className="w-full flex justify-center items-center">
