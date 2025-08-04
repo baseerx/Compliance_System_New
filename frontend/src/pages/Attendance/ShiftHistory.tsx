@@ -48,7 +48,7 @@ export default function ShiftHistory() {
   }>({
     fromdate: moment().format("YYYY-MM-DD"),
     todate: moment().format("YYYY-MM-DD"),
-    shift: "morning",
+    shift: "",
   });
   useEffect(() => {
     getSectionsData();
@@ -68,11 +68,20 @@ export default function ShiftHistory() {
 
     const getShiftDetails = async () => {
         try {
-                    toast.loading(
-                      `Fetching attendance data for shift from ${data.fromdate} to ${data.todate}`,{toastId: "attendance-fetch-success"}
-                    );
-          const response = await axios.post(`/attendance/shift-history/`,{ shiftid: data.shift,fromdate: data.fromdate,todate: data.todate });
-                   console.log(response.data);
+          
+            if (data.fromdate > data.todate) {
+                toast.error("From date cannot be greater than To date");
+            }
+            if (!data.shift) {
+                toast.error("Please select a shift");
+                return;
+            }
+                      toast.loading(
+                        `Fetching attendance data for shift from ${data.fromdate} to ${data.todate}`,
+                        { toastId: "attendance-fetch-success" }
+                      );
+            const response = await axios.post(`/attendance/shift-history/`, { shiftid: data.shift, fromdate: data.fromdate, todate: data.todate });
+            console.log(response.data)
             const cleanedData: AttendanceRow[] = response.data.attendance.map((item: any) => ({
                         erp_id: item.erp_id,
                         name: item.name,
@@ -91,7 +100,7 @@ export default function ShiftHistory() {
                         flag: item.flag,
                         shift_id: item.shift_id,
                         shiftname: item.shiftname,
-                        status: item.status,
+                        // status: item.status,
                         lateintime: item.lateintime,
                     }));
                     toast.dismiss("attendance-fetch-success");
@@ -104,44 +113,58 @@ export default function ShiftHistory() {
 
  
 const columns: ColumnDef<AttendanceRow>[] = [
-  { accessorKey: "erp_id", header: "ERP ID" },
-  { accessorKey: "name", header: "Name" },
-  { accessorKey: "designation", header: "Designation" },
-  { accessorKey: "section", header: "Section" },
-  { accessorKey: "grade", header: "Grade" },
+    { accessorKey: "erp_id", header: "ERP ID" },
+    { accessorKey: "name", header: "Name" },
+    { accessorKey: "designation", header: "Designation" },
+    { accessorKey: "section", header: "Section" },
+    { accessorKey: "grade", header: "Grade" },
     { accessorKey: "checkin_time", header: "Check-in Time" },
     { accessorKey: "checkout_time", header: "Check-out Time" },
-  {
-    accessorKey: "flag",
-    header: "Present/Absent",
-    cell: ({ getValue }) => {
-      const value = getValue<string>();
-      const color =
-        value?.toLowerCase() === "absent"
-          ? "inline-flex items-center px-6 py-0.5 justify-center gap-1 rounded-full font-semibold text-theme-lg bg-warning-50 text-warning-600 dark:bg-warning-500/15 dark:text-warning-500"
-          : value?.toLowerCase() === "present"
-          ? "inline-flex items-center px-6 py-0.5 justify-center gap-1 rounded-full font-semibold text-theme-lg bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500"
-          : "";
-      return <span className={color}>{value}</span>;
+    {
+        accessorKey: "flag",
+        header: "Present/Absent",
+        cell: ({ getValue }) => {
+            const value = getValue<string>();
+            const color =
+                value?.toLowerCase() === "absent"
+                    ? "inline-flex items-center px-6 py-0.5 justify-center gap-1 rounded-full font-semibold text-theme-lg bg-warning-50 text-warning-600 dark:bg-warning-500/15 dark:text-warning-500"
+                    : value?.toLowerCase() === "present"
+                    ? "inline-flex items-center px-6 py-0.5 justify-center gap-1 rounded-full font-semibold text-theme-lg bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500"
+                    : "";
+            return <span className={color}>{value}</span>;
+        },
     },
-  },
 
-  { accessorKey: "shiftname", header: "Shift Name" },
-  { accessorKey: "status", header: "Status" },
-  {
-    accessorKey: "lateintime",
-    header: "Late/On Time",
-    cell: ({ getValue }) => {
-      const value = getValue<string>();
-      const color =
-        value?.toLowerCase() === "late" || value?.toLowerCase() === "early"
-          ? "inline-flex items-center px-6 py-0.5 justify-center gap-1 rounded-full font-semibold text-theme-lg bg-warning-50 text-warning-600 dark:bg-warning-500/15 dark:text-warning-500"
-          : value?.toLowerCase() === "on time"
-          ? "inline-flex items-center px-6 py-0.5 justify-center gap-1 rounded-full font-semibold text-theme-lg bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500"
-          : "";
-      return <span className={color}>{value}</span>;
+    { accessorKey: "shiftname", header: "Shift Name" },
+
+    {
+        accessorKey: "lateintime",
+        header: "Late/On Time",
+        cell: ({ getValue }) => {
+            const value = getValue<string>()?.toLowerCase();
+            let color = "";
+            let label = getValue<string>();
+
+            // Handle multiple possible values for "on time-in", "early out", etc.
+            if (
+              value === "on time-in" ||
+              value === "on time-in, early out" ||
+              value === "on time-in, on time-out"
+            ) {
+              color =
+                "inline-flex items-center px-6 py-0.5 justify-center gap-1 rounded-full font-semibold text-theme-lg bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500";
+            } else if (
+              value === "late" ||
+              value === "early" ||
+              value === "early out"
+            ) {
+              color =
+                "inline-flex items-center px-6 py-0.5 justify-center gap-1 rounded-full font-semibold text-theme-lg bg-warning-50 text-warning-600 dark:bg-warning-500/15 dark:text-warning-500";
+            }
+
+            return <span className={color}>{label}</span>;
+        },
     },
-  },
 ];
 
   return (

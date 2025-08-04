@@ -1027,6 +1027,7 @@ GROUP BY Shift_Name;
             )
             response.raise_for_status()
             shift_details = response.json()
+            # print(str(shift_details))
             if not shift_details or 'Start_Time' not in shift_details[0] or 'End_Time' not in shift_details[0]:
                 return JsonResponse({"error": "Invalid shift details from API"}, status=502)
         except requests.RequestException as e:
@@ -1037,38 +1038,37 @@ GROUP BY Shift_Name;
         try:
             # Main query
             query = text("""
-                SELECT 
-                    s.Shift_Id,
-                    e.erp_id,
-                    e.name,
-                    d.title AS title,
-                    CAST(a.timestamp AS DATE) AS attendance_date,
-                    g.name AS grade,
-                    sec.name AS section,
-                    a.status,
-                    s.Shift_Name,
-                    MAX(CASE WHEN a.status = 'Checked In' THEN a.timestamp END) AS checkin_time,
-                    MAX(CASE WHEN a.status IN ('Checked Out', 'Early Checked Out') THEN a.timestamp END) AS checkout_time
-                FROM employees e 
-                JOIN shift_user_map s ON s.ErpID = e.erp_id
-                LEFT JOIN attendance a ON e.hris_id = a.user_id 
-                    AND CAST(a.timestamp AS DATE) BETWEEN :fromdate AND :todate
-                JOIN sections sec ON e.section_id = sec.id
-                JOIN designations d ON e.designation_id = d.id
-                JOIN grades g ON e.grade_id = g.id
-                WHERE e.flag = 1 
-                    AND s.Shift_Id = :shiftid
-                GROUP BY 
-                    s.Shift_Id,
-                    e.erp_id,
-                    e.name,
-                    d.title,
-                    g.name,
-                    a.status,
-                    sec.name,
-                    s.Shift_Name,
-                    CAST(a.timestamp AS DATE)
-                ORDER BY g.name DESC, attendance_date;
+          SELECT 
+    s.Shift_Id,
+    e.erp_id,
+    e.name,
+    d.title AS title,
+    CAST(a.timestamp AS DATE) AS attendance_date,
+    g.name AS grade,
+    sec.name AS section,
+    s.Shift_Name,
+    MAX(CASE WHEN a.status = 'Checked In' THEN a.timestamp END) AS checkin_time,
+    MAX(CASE WHEN a.status IN ('Checked Out', 'Early Checked Out') THEN a.timestamp END) AS checkout_time,
+    STRING_AGG(a.status, ', ') AS status
+FROM employees e 
+JOIN shift_user_map s ON s.ErpID = e.erp_id
+LEFT JOIN attendance a ON e.hris_id = a.user_id 
+    AND CAST(a.timestamp AS DATE) BETWEEN :fromdate AND :todate
+JOIN sections sec ON e.section_id = sec.id
+JOIN designations d ON e.designation_id = d.id
+JOIN grades g ON e.grade_id = g.id
+WHERE e.flag = 1 
+    AND s.Shift_Id = :shiftid
+GROUP BY 
+    s.Shift_Id,
+    e.erp_id,
+    e.name,
+    d.title,
+    g.name,
+    sec.name,
+    s.Shift_Name,
+    CAST(a.timestamp AS DATE)
+ORDER BY g.name DESC, attendance_date
             """)
             attendance_records = session.execute(
                 query, {"shiftid": shiftid,
@@ -1079,18 +1079,25 @@ GROUP BY Shift_Name;
                 if not row.checkin_time and not row.checkout_time:
                     return '-'
                 try:
-                    start_time = datetime.strptime(shift_start, "%I:%M %p").time()
-                    end_time = datetime.strptime(shift_end, "%I:%M %p").time()
-                    if row.status == 'Checked In' and row.checkin_time:
+                    status_parts = []
+                    if row.checkin_time:
+                        shift_start_time = (datetime.strptime(shift_start, "%I:%M %p") + timedelta(minutes=30)).time()
                         checkin_time = row.checkin_time.time()
-                        return 'On Time' if checkin_time <= (datetime.strptime(shift_start, "%I:%M %p") + timedelta(minutes=30)).time() else 'Late'
-                    if row.status in ('Checked Out', 'Early Checked Out') and row.checkout_time:
+                        if checkin_time <= shift_start_time:
+                            status_parts.append('On Time-In')
+                        else:
+                            status_parts.append('Late In')
+                    if row.checkout_time:
+                        end_time = datetime.strptime(shift_end, "%I:%M %p").time()
                         checkout_time = row.checkout_time.time()
-                        return 'Early' if checkout_time < end_time else 'On Time'
-                    return '-'
-                except ValueError:
+                        if checkout_time < end_time:
+                            status_parts.append('Early Out')
+                        else:
+                            status_parts.append('On Time-Out')
+                    return ', '.join(status_parts) if status_parts else '-'
+                except Exception as e:
                     print(
-                        f"Invalid time format in shift details: Start_Time={shift_start}, End_Time={shift_end}")
+                        f"Invalid time format in shift details: Start_Time={shift_start}, End_Time={shift_end}, error={e}")
                     return '-'
 
             def get_flag(row, session):
@@ -1132,7 +1139,7 @@ GROUP BY Shift_Name;
                     'shiftname': row.Shift_Name,
                     'checkin_time': row.checkin_time.strftime("%Y-%m-%d %H:%M:%S") if row.checkin_time else None,
                     'checkout_time': row.checkout_time.strftime("%Y-%m-%d %H:%M:%S") if row.checkout_time else None,
-                    'status': '-' if row.status is None else row.status,
+                    # 'status': '-' if row.status is None else row.status,
                     'timestamp': row.attendance_date.strftime("%Y-%m-%d") if row.attendance_date else None,
                     'lateintime': get_late_status(row, shift_start, shift_end),
                     'flag': get_flag(row, session),
