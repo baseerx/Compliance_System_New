@@ -30,7 +30,7 @@ export default function AttendanceOverview() {
     fetchAttendanceData();
   }, []);
 
-  const fetchAttendanceData = async () => {
+    const fetchAttendanceData = async () => {
     const user = JSON.parse(localStorage.getItem("user") || "{}");
       try {
           const attendanceId = "section-attendance";

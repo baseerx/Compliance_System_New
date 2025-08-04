@@ -162,11 +162,9 @@ class AttendanceView:
                         late_status = 'On time'
 
                 elif row.status == 'Checked Out':
-                    punch_time = row.timestamp.time() if row.timestamp else None
-                    if punch_time and punch_time < check_out_deadline:
-                        late_status = 'Early'
-                    else:
                         late_status = 'On time'
+                elif row.status == 'Early Checked Out':
+                    late_status = 'Early'
                 else:
                     late_status = '-'
                 # Integrate leave and holiday check for each employee for today

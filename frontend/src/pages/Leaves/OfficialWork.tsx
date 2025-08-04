@@ -24,7 +24,8 @@ type AttendanceRow = {
   start_date: string;
   end_date: string;
   reason: string;
-  status: string;
+    status?: string;
+  head_erpid?: any; // Assuming head_erpid is optional
   created_at?: string;
 };
 
@@ -33,7 +34,8 @@ export default function OfficialWork() {
 
   const [options, setOptions] = useState<{ label: string; value: string }[]>(
     []
-  );
+    );
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
 const leavetype = [
     "Meetings",
     "ACT Test",
@@ -51,7 +53,7 @@ const leavetype = [
     employee_id: 0,
     leave_type: "",
     reason: "",
-    status: "",
+    status: "pending",
     start_date: moment().format("YYYY-MM-DD").toString(),
     end_date: moment().format("YYYY-MM-DD").toString(),
   });
@@ -61,11 +63,28 @@ const leavetype = [
     leave_type: "",
     reason: "",
     status: "",
+    head_erpid: "",
     start_date: "",
     end_date: "",
   });
 
-  const getEmployeesLeaves = async () => {
+    const handleApproveLeave = async (id: string) => {
+        const [leaveId, action] = id.split("-");
+        try {
+            await axios.post("/officialwork/handle/", {
+                recordid: leaveId,
+                action: action,
+            });
+            toast.success(`Leave request ${action}d successfully`);
+            getEmployeesLeaves();
+        } catch (error) {
+            console.error("Error updating leave request:", error);
+            toast.error("Failed to update leave request");
+        }
+    };
+
+    const getEmployeesLeaves = async () => {
+    
       try {
         const loadingToastId = "officialwork-loading";
          toast.loading(
@@ -74,7 +93,7 @@ const leavetype = [
            </span>,
            { toastId: loadingToastId }
          );
-      const response = await axios.get("/officialwork/get/");
+      const response = await axios.get(`/officialwork/get/${user.erpid}/`);
 
       const cleanedData: AttendanceRow[] = response.data.leaves.map(
         (item: any) => {
@@ -83,7 +102,8 @@ const leavetype = [
             "employee_name",
             "employee_id",
             "erp_id",
-            "leave_type",
+              "leave_type",
+            "head_erpid",
             "start_date",
             "end_date",
             "reason",
@@ -136,14 +156,39 @@ const leavetype = [
       cell: ({ getValue }) => {
         const value = getValue<string>();
         const color =
-          value?.toLowerCase() === "rejected"
+          value?.toLowerCase() === "pending" || value?.toLowerCase() === "rejected"
             ? "inline-flex items-center px-6 py-0.5 justify-center gap-1 rounded-full font-semibold text-theme-lg bg-warning-50 text-warning-600 dark:bg-warning-500/15 dark:text-warning-500"
             : value?.toLowerCase() === "approved"
             ? "inline-flex items-center px-6 py-0.5 justify-center gap-1 rounded-full font-semibold text-theme-lg bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500"
             : "";
         return <span className={color}>{value}</span>;
       },
-    },
+      },
+    {
+        header: "Actions",
+        id: "actions-approve",
+        cell: ({ row }) => {
+            const user = JSON.parse(localStorage.getItem("user") || "{}");
+            return row.original.status?.toLowerCase() === "pending" && row.original.head_erpid === user.erpid ? (
+                <div className="flex gap-2">
+                    <Button
+                        size="xs"
+                        variant="primary"
+                        onClick={() => handleApproveLeave(`${row.original.id?.toString()}-approve`)}
+                    >
+                        Approve
+                    </Button>
+                    <Button
+                        size="xs"
+                        variant="outline"
+                        onClick={() => handleApproveLeave(`${row.original.id?.toString()}-reject`)}
+                    >
+                        Reject
+                    </Button>
+                </div>
+            ) : null;
+        },
+    }
   ];
   const fetchEmployeesOptions = async () => {
       try {
@@ -167,6 +212,7 @@ const leavetype = [
         !data.leave_type ||
         !data.start_date ||
         !data.end_date ||
+        !data.head_erpid ||
         !data.reason ||
         !data.status
       ) {
@@ -176,6 +222,7 @@ const leavetype = [
           leave_type: !data.leave_type ? "Leave Type is required" : "",
           reason: !data.reason ? "Reason is required" : "",
           status: !data.status ? "Status is required" : "",
+          head_erpid: !data.head_erpid ? "Head ERP ID is required" : "",
           start_date: !data.start_date ? "Start Date is required" : "",
           end_date: !data.end_date ? "End Date is required" : "",
         });
@@ -190,6 +237,7 @@ const leavetype = [
         leave_type: "",
         reason: "",
         status: "",
+        head_erpid: "",
         start_date: moment().format("YYYY-MM-DD").toString(),
         end_date: moment().format("YYYY-MM-DD").toString(),
       });
@@ -278,47 +326,40 @@ const leavetype = [
                 }}
               />
             </div>
-            <div className="my-5">
-              <TextArea
-                value={data.reason}
-                onChange={(value) => {
-                  setData({ ...data, reason: value });
-                }}
-                error={!!fielderror.reason}
-                hint={fielderror.reason}
-              />
-            </div>
-            <div className="flex justify-center items-center gap-4 my-3">
-              <Radio
-                id="status-approved"
-                name="leave-status"
-                value="approved"
-                checked={data.status === "approved"}
-                label="Approved"
-                onChange={() => setData({ ...data, status: "approved" })}
-              />
-              <Radio
-                id="status-rejected"
-                name="leave-status"
-                value="rejected"
-                checked={data.status === "rejected"}
-                label="Rejected"
-                onChange={() => setData({ ...data, status: "rejected" })}
-              />
-              <Radio
-                id="status-pending"
-                name="leave-status"
-                value="pending"
-                checked={data.status === "pending"}
-                label="Pending"
-                onChange={() => setData({ ...data, status: "pending" })}
-              />
+       
+              <div className="w-full">
+                <SearchableDropdown
+                  options={options}
+                  placeholder="select approving authority"
+                  label="Section Head"
+                  id="head-dropdown"
+                  value={
+                    options.find(
+                      (opt) => opt.value.split("-")[0] === `${data.head_erpid}`
+                    )?.value || ""
+                  }
+                  onChange={(value) => {
+                    const vals = value?.toString().split("-");
+                    setData({
+                      ...data,
+                      head_erpid: parseInt(vals[0]),
+                    });
+                  }}
+                  error={!!fielderror.head_erpid}
+                  hint={fielderror.head_erpid}
+                />
+              </div>
 
-              {!!fielderror.status && (
-                <p className="mt-1 text-xs text-red-600 dark:text-red-400">
-                  {fielderror.status}
-                </p>
-              )}
+              <div className="w-full">
+                <TextArea
+                  value={data.reason}
+                  onChange={(value) => {
+                    setData({ ...data, reason: value });
+                  }}
+                  error={!!fielderror.reason}
+                  hint={fielderror.reason}
+                />
+              
             </div>
           </div>
           <div className="w-full flex justify-center items-center">
