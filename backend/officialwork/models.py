@@ -5,6 +5,7 @@ from django.utils import timezone
 class OfficialWorkModel(models.Model):
     employee_id = models.IntegerField(default=0)
     erp_id = models.IntegerField(default=0)  # Assuming erp_id is an integer, adjust as necessary
+    head_erpid = models.IntegerField(default=0)  # Assuming erp_id is an integer, adjust as necessary
     leave_type = models.CharField(max_length=50, null=True, blank=True)
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
