@@ -164,6 +164,7 @@ class UsersView:
         # print(f"User authenticated: {user}")  # Debugging line to check user authentication
         if user is not None:
             erpid=CustomUser.objects.filter(authid=user.pk).values_list('erpid', flat=True).first()
+            grade= Employees.objects.filter(erp_id=erpid).values_list('grade_id', flat=True).first()
             if erpid is not None:
             # return user details alongside token and success status
                 payload = {
@@ -172,6 +173,7 @@ class UsersView:
                     'username': user.username,
                     'first_name': user.first_name,
                     'last_name': user.last_name,
+                    'grade_id': grade,
                     'erpid': erpid,
                     'email': user.email,
                     'is_staff': user.is_staff,

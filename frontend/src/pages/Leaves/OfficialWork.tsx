@@ -53,7 +53,8 @@ const leavetype = [
     employee_id: 0,
     leave_type: "",
     reason: "",
-    status: "pending",
+      status: user.grade_id >= 9 ? "approved" : "pending",
+    head_erpid: user.grade_id >= 9 ? user.erpid : "",
     start_date: moment().format("YYYY-MM-DD").toString(),
     end_date: moment().format("YYYY-MM-DD").toString(),
   });
@@ -102,7 +103,7 @@ const leavetype = [
             "employee_name",
             "employee_id",
             "erp_id",
-              "leave_type",
+            "leave_type",
             "head_erpid",
             "start_date",
             "end_date",
@@ -265,7 +266,7 @@ const leavetype = [
               <SearchableDropdown
                 options={options}
                 placeholder="Select a employee"
-                label="Employees"
+                label={user.grade_id < 9 ? `Employees` : `Employee  (Status for Grade 9 and above is auto approved)`}
                 id="employee-dropdown"
                 value={
                   options.find(
@@ -328,30 +329,31 @@ const leavetype = [
             </div>
        
               <div className="w-full">
-                <SearchableDropdown
-                  options={options}
-                  placeholder="select approving authority"
-                  label="Section Head"
-                  id="head-dropdown"
-                  value={
-                    options.find(
-                      (opt) => opt.value.split("-")[0] === `${data.head_erpid}`
-                    )?.value || ""
-                  }
-                  onChange={(value) => {
-                    const vals = value?.toString().split("-");
-                    setData({
-                      ...data,
-                      head_erpid: parseInt(vals[0]),
-                    });
-                  }}
-                  error={!!fielderror.head_erpid}
-                  hint={fielderror.head_erpid}
-                />
+                          {user.grade_id<9 && <SearchableDropdown
+                              options={options}
+                              placeholder="select approving authority"
+                              label="Section Head"
+                              id="head-dropdown"
+                              value={
+                                  options.find(
+                                      (opt) => opt.value.split("-")[0] === `${data.head_erpid}`
+                                  )?.value || ""
+                              }
+                              onChange={(value) => {
+                                  const vals = value?.toString().split("-");
+                                  setData({
+                                      ...data,
+                                      head_erpid: parseInt(vals[0]),
+                                  });
+                              }}
+                              error={!!fielderror.head_erpid}
+                              hint={fielderror.head_erpid}
+                          />}
               </div>
 
               <div className="w-full">
-                <TextArea
+                          <TextArea
+                              placeholder="Enter reason for leave"
                   value={data.reason}
                   onChange={(value) => {
                     setData({ ...data, reason: value });

@@ -31,7 +31,7 @@ type AttendanceRow = {
 export default function IndividualAttendance() {
   const [leaves, setLeaves] = useState<AttendanceRow[]>([]);
   const user= JSON.parse(localStorage.getItem("user") || "{}");
- 
+  
   const [options, setOptions] = useState<{ label: string; value: string }[]>(
     []
   );
@@ -44,6 +44,7 @@ export default function IndividualAttendance() {
     "Official Work",
     "Umrah Leave",
     "Hajj Leave",
+    "Shift Leave",
     "Recreational Leave",
     "Compensatory Leave",
     "Short Leave",
@@ -84,8 +85,8 @@ export default function IndividualAttendance() {
     employee_id: 0,
     leave_type: "",
     reason: "",
-    status: "pending",
-    head: "",
+    status: user.grade_id >= 9 ? "approved" : "pending",
+    head: user.grade_id>=9?user.erpid:"",
     start_date: moment().format("YYYY-MM-DD").toString(),
     end_date: moment().format("YYYY-MM-DD").toString(),
   });
@@ -273,7 +274,11 @@ const columns: ColumnDef<AttendanceRow>[] = [
               <SearchableDropdown
                 options={options}
                 placeholder="Select a employee"
-                label="Employees"
+                label={
+                  user.grade_id < 9
+                    ? `Employees`
+                    : `Employee  (Status for Grade 9 and above is auto approved)`
+                }
                 id="employee-dropdown"
                 value={
                   options.find(
@@ -335,33 +340,35 @@ const columns: ColumnDef<AttendanceRow>[] = [
               />
             </div>
             <div className="flex justify-center items-center gap-4 my-3">
-              <div className="w-full">
-                <SearchableDropdown
-                  options={options}
-                  placeholder="select approving authority"
-                  label="Section Head"
-                  id="head-dropdown"
-                  value={
-                    options.find(
-                      (opt) =>
-                        opt.value.split('-')[0] === `${data.head}`
-                    )?.value || ""
-                  }
-                  onChange={(value) => {
-                    const vals = value?.toString().split("-");
-                    setData({
-                      ...data,
-                      head: parseInt(vals[0]),
-                    });
-                  }}
-                  error={!!fielderror.head}
-                  hint={fielderror.head}
-                />
-              </div>
+              {user.grade_id < 9 && (
+                <div className="w-full">
+                  <SearchableDropdown
+                    options={options}
+                    placeholder="select approving authority"
+                    label="Section Head"
+                    id="head-dropdown"
+                    value={
+                      options.find(
+                        (opt) => opt.value.split("-")[0] === `${data.head}`
+                      )?.value || ""
+                    }
+                    onChange={(value) => {
+                      const vals = value?.toString().split("-");
+                      setData({
+                        ...data,
+                        head: parseInt(vals[0]),
+                      });
+                    }}
+                    error={!!fielderror.head}
+                    hint={fielderror.head}
+                  />
+                </div>
+              )}
             </div>
             <div className="my-5">
               <TextArea
-                value={data.reason}
+                              value={data.reason}
+                placeholder="Enter reason for leave"
                 onChange={(value) => {
                   setData({ ...data, reason: value });
                 }}

@@ -189,7 +189,7 @@ export default function SignUpForm() {
 
               <Input
                 type="text"
-                placeholder="Enter ERP ID - Ask HR | Baseer AD (IT)"
+                placeholder="Enter ERP ID - Baseer AD (IT)"
                 value={data.erpid}
                 onChange={(e) => handleChange("erpid", e.target.value)}
                 error={!!errors.erpid}
