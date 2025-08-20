@@ -17,7 +17,7 @@ export default function PieChart({ present, absent, total }: Props) {
       />
       {/* <PageBreadcrumb pageTitle="ISMO Attendance Dashboard" /> */}
       <div className="mt-10">
-        <ComponentCard title="Todays Attendance">
+        <ComponentCard title="Visual Attendance Overview">
           <PieChartOne present={present} absent={absent} total={total} />
         </ComponentCard>
       </div>

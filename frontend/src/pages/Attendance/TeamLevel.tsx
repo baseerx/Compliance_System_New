@@ -46,10 +46,9 @@ export default function TeamLevel() {
           const user = JSON.parse(localStorage.getItem("user") || "{}");
       const response = await axios.post("/attendance/team-level/", {
         fromdate: fromdate,
-          todate: todate,
+        todate: todate,
         erp_id: user.erpid,
       });
-
       // Ensure response.data is an array and format timestamp
       const cleanedData: AttendanceRow[] = response.data.map((item: any) => {
           const picked = {
@@ -59,15 +58,19 @@ export default function TeamLevel() {
             grade: item.grade,
             section: item.section,
             checkout_time:
-              item.checkout_time && item.checkout_time !== '-'
-                ? moment(item.checkout_time).format('YYYY-MM-DD HH:mm:ss')
+              item.checkout_time && item.checkout_time !== "-"
+                ? moment(item.checkout_time).format("YYYY-MM-DD HH:mm:ss")
                 : "-",
             checkin_time:
-              item.checkin_time && item.checkin_time !== '-'
-                ? moment(item.checkin_time).format('YYYY-MM-DD HH:mm:ss')
+              item.checkin_time && item.checkin_time !== "-"
+                ? moment(item.checkin_time).format("YYYY-MM-DD HH:mm:ss")
                 : "-",
-            timestamp: item.timestamp !== '-' ? moment(item.timestamp).format('DD-MM-YYYY') : "-",
-            status: item.checkin_time !== '-' ? item.late : "-",
+            timestamp:
+              item.timestamp !== "-"
+                ? moment(item.timestamp).format("DD-MM-YYYY")
+                : "-",
+            status: item.checkin_time !== "-" ? item.late : "-",
+            late: item.lateintime,
           };
         if (picked.timestamp && typeof picked.timestamp === "string") {
           picked.timestamp = picked.timestamp.replace("T", " ");
@@ -79,40 +82,42 @@ export default function TeamLevel() {
     } catch (error) {
       console.error("Error fetching attendance data:", error);
     }
-  };
+    };
+    
+ 
 const columns: ColumnDef<AttendanceRow>[] = [
-  {
-    accessorKey: "erp_id",
-    header: "ERP ID",
-  },
-  {
-    accessorKey: "name",
-    header: "Name",
-  },
-  {
-    accessorKey: "designation",
-    header: "Designation",
-  },
-  {
-    accessorKey: "grade",
-    header: "Grade",
-  },
-  {
-    accessorKey: "section",
-    header: "Section",
-  },
-  {
-    accessorKey: "timestamp",
-    header: "Date",
-  },
-  {
-    accessorKey: "checkin_time",
-    header: "Checkin Time",
-  },
-  {
-    accessorKey: "checkout_time",
-    header: "Checkout Time",
-  },
+    {
+        accessorKey: "erp_id",
+        header: "ERP ID",
+    },
+    {
+        accessorKey: "name",
+        header: "Name",
+    },
+    {
+        accessorKey: "designation",
+        header: "Designation",
+    },
+    {
+        accessorKey: "grade",
+        header: "Grade",
+    },
+    {
+        accessorKey: "section",
+        header: "Section",
+    },
+    {
+        accessorKey: "timestamp",
+        header: "Date",
+    },
+    {
+        accessorKey: "checkin_time",
+        header: "Checkin Time",
+    },
+    {
+        accessorKey: "checkout_time",
+        header: "Checkout Time",
+    },
     {
         accessorKey: "status",
         header: "Status",
@@ -122,9 +127,24 @@ const columns: ColumnDef<AttendanceRow>[] = [
                 value?.toLowerCase() === "absent"
                     ? "inline-flex items-center px-6 py-0.5 justify-center gap-1 rounded-full font-semibold text-theme-lg bg-warning-50 text-warning-600 dark:bg-warning-500/15 dark:text-warning-500"
                     : value?.toLowerCase() === "present"
-                        ? "inline-flex items-center px-6 py-0.5 justify-center gap-1 rounded-full font-semibold text-theme-lg bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500"
-                        : "-";
+                    ? "inline-flex items-center px-6 py-0.5 justify-center gap-1 rounded-full font-semibold text-theme-lg bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500"
+                    : "-";
             return <span className={color}>{value}</span>;
+        }
+    },
+    {
+        accessorKey: "late",
+        header: "Late In Time",
+        cell: ({ getValue }) => {
+            const value = getValue<string>();
+            
+           const color =
+             value?.toLowerCase() === "late"
+               ? "inline-flex items-center px-6 py-0.5 justify-center gap-1 rounded-full font-semibold text-theme-lg bg-warning-50 text-warning-600 dark:bg-warning-500/15 dark:text-warning-500"
+               : value?.toLowerCase() === "on time"
+               ? "inline-flex items-center px-6 py-0.5 justify-center gap-1 rounded-full font-semibold text-theme-lg bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500"
+               : "-";
+                        return <span className={color}>{value}</span>;
         }
     }
 ];

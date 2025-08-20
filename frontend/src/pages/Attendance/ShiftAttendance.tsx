@@ -11,7 +11,7 @@ import DatePicker from "../../components/form/date-picker";
 import Label from "../../components/form/Label";
 import Select from "../../components/form/Select";
 import Button from "../../components/ui/button/Button";
-
+import _ from 'lodash'
 type AttendanceRow = {
     id?: string;
     uid?: string;
@@ -20,11 +20,12 @@ type AttendanceRow = {
     designation: string;
     section: string;
     timestamp: string;
-    grade: string;
+    grade?: string;
     punch?: string;
     checkin_time?: string;
     checkout_time?: string;
     flag?: string;
+    shifttype?: string;
     lateintime?: string;
     shift_id?: string;
     shiftname?: string;
@@ -70,28 +71,30 @@ export default function ShiftAttendance() {
                       `Fetching attendance data for shift on ${data.date}`,{toastId: "attendance-fetch-success"}
                     );
           const response = await axios.post(`/attendance/shift-details/`,{ shiftid: data.shift,date: data.date });
-                   console.log(response.data);
-            const cleanedData: AttendanceRow[] = response.data.attendance.map((item: any) => ({
-                        erp_id: item.erp_id,
-                        name: item.name,
-                        designation: item.designation,
-                        grade: item.grade,
-                        section: item.section,
-                        timestamp: item.timestamp
-                            ? moment(item.timestamp).format('YYYY-MM-DD HH:mm:ss')
-                    : "-",
-                        checkin_time: item.checkin_time
-                            ? moment(item.checkin_time).format('YYYY-MM-DD HH:mm:ss')
-                            : "-",
-                        checkout_time: item.checkout_time
-                            ? moment(item.checkout_time).format('YYYY-MM-DD HH:mm:ss')
-                            : "-",
-                        flag: item.flag,
-                        shift_id: item.shift_id,
-                        shiftname: item.shiftname,
-                        status: item.status,
-                        lateintime: item.lateintime,
-                    }));
+                const nccData = _.filter(response.data.attendance, (item) => item.shifttype === 'NCC');
+            const cleanedData: AttendanceRow[] = nccData.map(
+              (item: any) => ({
+                erp_id: item.erp_id,
+                name: item.name,
+                designation: item.designation,
+                section: item.section,
+                timestamp: item.timestamp
+                  ? moment(item.timestamp).format("YYYY-MM-DD HH:mm:ss")
+                  : "-",
+                checkin_time: item.checkin_time
+                  ? moment(item.checkin_time).format("YYYY-MM-DD HH:mm:ss")
+                  : "-",
+                checkout_time: item.checkout_time
+                  ? moment(item.checkout_time).format("YYYY-MM-DD HH:mm:ss")
+                  : "-",
+                flag: item.flag,
+                shift_id: item.shift_id,
+                shiftname: item.shiftname,
+                shifttype: item.shifttype,
+                status: item.status,
+                lateintime: item.lateintime,
+              })
+            );
                     toast.dismiss("attendance-fetch-success");
                     setAttendanceData(cleanedData);
         // Handle the response and update state as needed
@@ -106,9 +109,9 @@ const columns: ColumnDef<AttendanceRow>[] = [
   { accessorKey: "name", header: "Name" },
   { accessorKey: "designation", header: "Designation" },
   { accessorKey: "section", header: "Section" },
-  { accessorKey: "grade", header: "Grade" },
-    { accessorKey: "checkin_time", header: "Check-in Time" },
-    { accessorKey: "checkout_time", header: "Check-out Time" },
+
+  { accessorKey: "checkin_time", header: "Check-in Time" },
+  { accessorKey: "checkout_time", header: "Check-out Time" },
   {
     accessorKey: "flag",
     header: "Present/Absent",
@@ -125,6 +128,7 @@ const columns: ColumnDef<AttendanceRow>[] = [
   },
 
   { accessorKey: "shiftname", header: "Shift Name" },
+  { accessorKey: "shifttype", header: "Shift Type" },
   { accessorKey: "status", header: "Status" },
   {
     accessorKey: "lateintime",

@@ -22,7 +22,8 @@ type AttendanceRow = {
   leave_type: string;
   start_date: string;
   end_date: string;
-  head?: any;
+    head?: any;
+  head_erpid?: any;
   reason: string;
   status?: string;
   created_at?: string;
@@ -110,7 +111,6 @@ export default function IndividualAttendance() {
           const picked = _.pick(item, [
             "id",
             "employee_name",
-            "employee_id",
             "erp_id",
             "leave_type",
             "start_date",
@@ -143,10 +143,7 @@ const columns: ColumnDef<AttendanceRow>[] = [
         header: "Name",
         accessorKey: "employee_name",
     },
-    {
-        header: "Employee ID",
-        accessorKey: "employee_id",
-    },
+  
     {
         header: "Leave Type",
         accessorKey: "leave_type",
@@ -158,6 +155,15 @@ const columns: ColumnDef<AttendanceRow>[] = [
     {
         header: "End Date",
         accessorKey: "end_date",
+    },
+    {
+        header:"Leave Count",
+        accessorKey: "leave_count",
+        cell: ({ row }) => {
+            const start = moment(row.original.start_date);
+            const end = moment(row.original.end_date);
+            return end.diff(start, 'days') + 1; // +1 to include the start date
+        }
     },
     {
         header: "Reason",

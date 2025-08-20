@@ -11,6 +11,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import DatePicker from "../../components/form/date-picker";
 import SearchableDropdown from "../../components/form/input/SearchableDropDown";
 import Button from "../../components/ui/button/Button";
+import PieChart from "../Charts/PieChart";
 
 type AttendanceRow = {
     id?: number;
@@ -37,7 +38,12 @@ export default function IndividualAttendance() {
   const [todate, setTodate] = useState<String>(moment().format("YYYY-MM-DD"));
   const [options, setOptions] = useState<{ label: string; value: string }[]>(
     []
-  );
+    );
+    const [indivdata, setIndivData] = useState<any>({
+        present: 0,
+        absent: 0,
+        total: 0,
+    });
   useEffect(() => {
     fetchEmployeesOptions();
   }, []);
@@ -86,12 +92,26 @@ export default function IndividualAttendance() {
         }
         return picked;
       });
+          setIndivData({
+            present: response.data.filter((item: any) => item.flag?.toLowerCase() === "present").length,
+            absent: response.data.filter((item: any) => {
+              const isWeekend = moment(item.timestamp).isoWeekday() > 5;
+              return !isWeekend && item.flag?.toLowerCase() === "absent";
+            }).length,
+            total: response.data.filter((item: any) => {
+              const isWeekend = moment(item.timestamp).isoWeekday() <= 5;
+              return isWeekend;
+            }).length,
+          });
+          
         toast.dismiss("attendance-fetch");
       setAttendanceData(cleanedData);
     } catch (error) {
       console.error("Error fetching attendance data:", error);
     }
   };
+
+    useEffect(() => { console.log(indivdata)},[indivdata])
 
 const columns: ColumnDef<AttendanceRow>[] = [
   {
@@ -222,7 +242,14 @@ const columns: ColumnDef<AttendanceRow>[] = [
               </Button>
             </div>
           </div>
-
+                  <div className="rounded-xl shadow-2xl shadow-blue-200 z-5 text-white mb-4">
+                      <small className="text-black ml-2">Chart does not include weekends: {`Total: ${indivdata.total}, Present: ${indivdata.present}, Absent: ${indivdata.absent}`}</small>
+                      <PieChart
+                                present={indivdata.present}
+                                absent={indivdata.absent}
+                                total={indivdata.total}
+                              />
+                  </div>
           <EnhancedDataTable<AttendanceRow>
             data={attendancedata}
                       columns={columns}

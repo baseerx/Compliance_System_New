@@ -582,6 +582,7 @@ class AttendanceView:
                     d.title AS designation,
                     g.name AS grade,
                     s.name AS section,
+                    a.lateintime AS lateintime,
                     CAST(a.timestamp AS date) AS attendance_date,
                     MAX(CASE WHEN a.status = 'Checked In' THEN a.timestamp END) AS checkin_time,
                     MAX(CASE WHEN a.status IN ('Checked Out', 'Early Checked Out') THEN a.timestamp END) AS checkout_time
@@ -595,7 +596,14 @@ class AttendanceView:
                 WHERE e.flag = 1 
                     AND e.section_id = (SELECT section_id FROM employees WHERE erp_id = :erpid)
                     AND e.grade_id <= (SELECT grade_id FROM employees WHERE erp_id = :erpid)
-                GROUP BY e.erp_id, e.name, d.title, g.name, s.name, CAST(a.timestamp AS date);
+                GROUP BY 
+                    e.erp_id, 
+                    e.name, 
+                    d.title, 
+                    g.name, 
+                    s.name, 
+                    a.lateintime, 
+                    CAST(a.timestamp AS date)
             """)
 
             result = session.execute(
@@ -643,7 +651,8 @@ class AttendanceView:
                     'checkout_time': row.checkout_time if row.checkout_time is not None else '-',
                     'checkin_time': row.checkin_time if row.checkin_time is not None else '-',
                     'timestamp': row.timestamp if row.timestamp is not None else '-',
-                    'late': '-' if flag=='Absent' else flag, 
+                    'late': '-' if flag=='Absent' else flag,
+                    'lateintime': row.lateintime if row.lateintime is not None else '-',
                 })
             return JsonResponse(records, safe=False)
         finally:
@@ -844,47 +853,96 @@ GROUP BY Shift_Name;
                 'name': row.name
             })
         return JsonResponse(data, safe=False)
-    
+
+
     @csrf_exempt
     @require_POST
     def shift_details(request):
+        # Parse JSON body
         try:
-           
             data = json.loads(request.body.decode('utf-8'))
-        except Exception:
-            return JsonResponse({"error": "Invalid JSON body"}, status=400)
+        except json.JSONDecodeError:
+            print("Invalid JSON format in request body")
+            return JsonResponse({"error": "Invalid JSON format"}, status=400)
+
         shiftid = data.get('shiftid')
-        date_str = data.get('date')  # format expected: 'YYYY-MM-DD'
+        date_str = data.get('date')
+        if not shiftid or not date_str:
+            print("Missing shiftid or date in request")
+            return JsonResponse({"error": "Missing shiftid or date"}, status=400)
 
-        url = os.environ.get('SDXP_URL')
-        if not url:
-            return JsonResponse({"error": "SDXP_URL not set in environment variables"}, status=500)
-
-        # Fetch shift details from external API
-        try:
-            response = requests.post(
-                f'{url}/ShiftRoster/GetShiftDetails', json={"shiftid": shiftid, "date": date_str}, timeout=5)
-            response.raise_for_status()
-            shift_details = response.json()
-  
-        except requests.RequestException as e:
-            return JsonResponse({"error": f"Failed to fetch shift details: {str(e)}"}, status=502)
-        session = SessionLocal()
         try:
             date_obj = datetime.strptime(date_str, "%Y-%m-%d").date()
+        except ValueError:
+            print(f"Invalid date format: {date_str}")
+            return JsonResponse({"error": "Invalid date format, expected YYYY-MM-DD"}, status=400)
+
+        # Fetch shift details from external API
+        url = os.environ.get('SDXP_URL')
+        if not url:
+            print("SDXP_URL not set in environment variables")
+            return JsonResponse({"error": "SDXP_URL not set"}, status=500)
+
+        try:
+            response = requests.post(
+                f'{url}/ShiftRoster/GetShiftDetails',
+                json={"shiftid": shiftid, "date": date_str},
+                timeout=5
+            )
+            response.raise_for_status()
+            shift_details = response.json()
+            if not shift_details or not isinstance(shift_details, list):
+                print("Invalid or empty shift details from API")
+                return JsonResponse({"error": "Invalid shift details"}, status=502)
+        except requests.RequestException as e:
+            print(f"Failed to fetch shift details: {str(e)}")
+            return JsonResponse({"error": f"Failed to fetch shift details: {str(e)}"}, status=502)
+
+        # Create mapping of User_Name to Shift_Type and shift times
+        shift_type_map = {}
+        shift_time_map = {}
+        for entry in shift_details:
+            user_name = entry.get('User_Name')
+            if user_name:
+                if user_name not in shift_type_map:
+                    shift_type_map[user_name] = entry.get('Shift_Type', '-')
+                    shift_time_map[user_name] = {
+                        'Start_Time': entry.get('Start_Time'),
+                        'End_Time': entry.get('End_Time')
+                    }
+
+        session = SessionLocal()
+        try:
+            # Bulk fetch leaves and holidays
+            leaves = {row.erp_id: row.leave_type for row in session.execute(
+                text("SELECT erp_id, leave_type FROM leaves WHERE CAST(start_date AS DATE) <= :att_date AND CAST(end_date AS DATE) >= :att_date"),
+                {"att_date": date_obj}
+            ).fetchall()}
+            official_leaves = {row.erp_id: row.leave_type for row in session.execute(
+                text("SELECT erp_id, leave_type FROM official_work_leaves WHERE CAST(start_date AS DATE) <= :att_date AND CAST(end_date AS DATE) >= :att_date"),
+                {"att_date": date_obj}
+            ).fetchall()}
+            holiday = session.execute(
+                text("SELECT name FROM public_holidays WHERE CAST(date AS DATE) = :att_date"),
+                {"att_date": date_obj}
+            ).first()
+            holiday_name = holiday.name if holiday else None
+
+            # Updated SQL query to match shift_history
             query = text("""
                 SELECT 
                     s.Shift_Id,
                     e.erp_id,
                     e.name,
+                    s.Sdxp_Username AS user_name,
                     d.title AS title,
-                         a.timestamp,
+                    CAST(a.timestamp AS DATE) AS attendance_date,
                     g.name AS grade,
                     sec.name AS section,
-                         a.status,
                     s.Shift_Name,
                     MAX(CASE WHEN a.status = 'Checked In' THEN a.timestamp END) AS checkin_time,
-                    MAX(CASE WHEN a.status IN ('Checked Out', 'Early Checked Out') THEN a.timestamp END) AS checkout_time
+                    MAX(CASE WHEN a.status IN ('Checked Out', 'Early Checked Out') THEN a.timestamp END) AS checkout_time,
+                    STRING_AGG(a.status, ', ') AS status
                 FROM employees e 
                 JOIN shift_user_map s ON s.ErpID = e.erp_id
                 LEFT JOIN attendance a ON e.hris_id = a.user_id 
@@ -898,16 +956,49 @@ GROUP BY Shift_Name;
                     s.Shift_Id,
                     e.erp_id,
                     e.name,
+                    s.Sdxp_Username,
                     d.title,
                     g.name,
                     sec.name,
                     s.Shift_Name,
-                    a.status,
-                    a.timestamp
-                ORDER BY g.name DESC
+                    CAST(a.timestamp AS DATE)
+                ORDER BY g.name DESC, attendance_date
             """)
             attendance_records = session.execute(
                 query, {"shiftid": shiftid, "att_date": date_obj}).fetchall()
+
+            def get_late_status(row, user_name):
+                if not row.checkin_time and not row.checkout_time:
+                    return '-'
+                if user_name not in shift_time_map:
+                    print(f"No shift times for user_name: {user_name}")
+                    return '-'
+                try:
+                    shift_times = shift_time_map[user_name]
+                    shift_start = shift_times['Start_Time']
+                    shift_end = shift_times['End_Time']
+                    status_parts = []
+                    if row.checkin_time:
+                        shift_start_time = (datetime.strptime(
+                            shift_start, "%I:%M %p") + timedelta(minutes=30)).time()
+                        checkin_time = row.checkin_time.time()
+                        if checkin_time <= shift_start_time:
+                            status_parts.append('On Time-In')
+                        else:
+                            status_parts.append('Late In')
+                    if row.checkout_time:
+                        end_time = datetime.strptime(shift_end, "%I:%M %p").time()
+                        checkout_time = row.checkout_time.time()
+                        if checkout_time < end_time:
+                            status_parts.append('Early Out')
+                        else:
+                            status_parts.append('On Time-Out')
+                    return ', '.join(status_parts) if status_parts else '-'
+                except ValueError as e:
+                    print(
+                        f"Invalid time format for user_name: {user_name}, times: {shift_times}, error={e}")
+                    return '-'
+
             attendance_records = [
                 {
                     'shift_id': row.Shift_Id,
@@ -917,68 +1008,27 @@ GROUP BY Shift_Name;
                     'grade': row.grade,
                     'section': row.section,
                     'shiftname': row.Shift_Name,
+                    'shifttype': shift_type_map.get(row.user_name, '-'),
                     'checkin_time': row.checkin_time.strftime("%Y-%m-%d %H:%M:%S") if row.checkin_time else None,
                     'checkout_time': row.checkout_time.strftime("%Y-%m-%d %H:%M:%S") if row.checkout_time else None,
                     'status': '-' if row.status is None else row.status,
-                    'timestamp': row.timestamp.strftime("%Y-%m-%d %H:%M:%S") if row.timestamp else None,
-                    'lateintime': (
-                        'On Time' if row.status == 'Checked In' and row.timestamp and shift_details and shift_details[0].get('Start_Time')
-                        and row.timestamp.time() <= datetime.strptime(shift_details[0]['Start_Time'], "%I:%M %p").time()
-                        else 'Late' if row.status == 'Checked In' and row.timestamp and shift_details and shift_details[0].get('Start_Time')
-                        else 'Early' if row.status == 'Checked Out' and row.timestamp and shift_details and shift_details[0].get('End_Time')
-                        and row.timestamp.time() < datetime.strptime(shift_details[0]['End_Time'], "%I:%M %p").time()
-                        else 'On Time' if row.status == 'Checked Out' and row.timestamp and shift_details and shift_details[0].get('End_Time')
-                        else '-'
-                    ),
+                    'timestamp': row.attendance_date.strftime("%Y-%m-%d") if row.attendance_date else None,
+                    'lateintime': get_late_status(row, row.user_name),
                     'flag': (
-                        'Present' if row.timestamp is not None
-                        else (
-                            session.execute(text("""
-                    SELECT leave_type FROM leaves
-                    WHERE erp_id = :erp_id
-                    AND CAST(start_date AS DATE) <= CAST(:att_date AS DATE)
-                    AND CAST(end_date AS DATE) >= CAST(:att_date AS DATE)
-                """), {"erp_id": row.erp_id, "att_date": date_obj}).first().leave_type
-                            if session.execute(text("""
-                    SELECT leave_type FROM leaves
-                    WHERE erp_id = :erp_id
-                    AND CAST(start_date AS DATE) <= CAST(:att_date AS DATE)
-                    AND CAST(end_date AS DATE) >= CAST(:att_date AS DATE)
-                """), {"erp_id": row.erp_id, "att_date": date_obj}).first()
-                            else (
-                                session.execute(text("""
-                        SELECT leave_type FROM official_work_leaves
-                        WHERE erp_id = :erp_id
-                        AND CAST(start_date AS DATE) <= CAST(:att_date AS DATE)
-                        AND CAST(end_date AS DATE) >= CAST(:att_date AS DATE)
-                    """), {"erp_id": row.erp_id, "att_date": date_obj}).first().leave_type
-                                if session.execute(text("""
-                        SELECT leave_type FROM official_work_leaves
-                        WHERE erp_id = :erp_id
-                        AND CAST(start_date AS DATE) <= CAST(:att_date AS DATE)
-                        AND CAST(end_date AS DATE) >= CAST(:att_date AS DATE)
-                    """), {"erp_id": row.erp_id, "att_date": date_obj}).first()
-                                else (
-                                    session.execute(text("""
-                            SELECT name FROM public_holidays
-                            WHERE CAST(date AS DATE) = :att_date
-                        """), {"att_date": date_obj}).first().name
-                                    if session.execute(text("""
-                            SELECT name FROM public_holidays
-                            WHERE CAST(date AS DATE) = :att_date
-                        """), {"att_date": date_obj}).first()
-                                    else 'Absent'
-                                )
-                            )
-                        )
+                        'Present' if row.checkin_time or row.checkout_time
+                        else leaves.get(row.erp_id) or
+                        official_leaves.get(row.erp_id) or
+                        holiday_name or 'Absent'
                     )
                 } for row in attendance_records
             ]
             return JsonResponse({'attendance': attendance_records}, safe=False, status=200)
+        except Exception as e:
+            print(f"Database error occurred: {str(e)}")
+            return JsonResponse({"error": f"Database error occurred: {str(e)}"}, status=500)
         finally:
             session.close()
-   
-
+      
     @csrf_exempt
     @require_POST
     def shift_history(request):
