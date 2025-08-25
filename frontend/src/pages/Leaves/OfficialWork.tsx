@@ -257,7 +257,7 @@ const leavetype = [
       />
       <PageBreadcrumb pageTitle="Attendance History" />
       <div className="space-y-6">
-        <ComponentCard title={`Leave Application Form`}>
+        <ComponentCard title={`Official Work Application Form`}>
           <ToastContainer position="bottom-right" />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 mb-4 gap-1 justify-center items-center">
@@ -285,7 +285,7 @@ const leavetype = [
               />
             </div>
             <div className="w-full my-3">
-              <Label>Leave Type</Label>
+              <Label>Work Type</Label>
               <Select
                 options={leavetype.map((type) => ({
                   label: type,
@@ -352,7 +352,7 @@ const leavetype = [
 
               <div className="w-full">
                           <TextArea
-                              placeholder="Enter reason for leave"
+                              placeholder="Enter reason for official work"
                   value={data.reason}
                   onChange={(value) => {
                     setData({ ...data, reason: value });

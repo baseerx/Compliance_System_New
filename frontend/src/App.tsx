@@ -40,6 +40,7 @@ import TeamLevel from "./pages/Attendance/TeamLevel";
 import ShiftAttendance from "./pages/Attendance/ShiftAttendance";
 import ShiftHistory from "./pages/Attendance/ShiftHistory";
 import RccShift from "./pages/Attendance/RccShift";
+import AddEmployee from "./pages/UserManagement/AddEmployee";
 export default function App() {
   return (
     <>
@@ -110,6 +111,7 @@ export default function App() {
 
               {/* User managment */}
               <Route path="/users/create" element={<CreateUser />} />
+              <Route path="/users/add-employee" element={<AddEmployee />} />
               <Route path="/users/assign-rights" element={<AssignRights />} />
 
               {/* Menu Management */}

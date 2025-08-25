@@ -4,6 +4,11 @@ from .views import UsersView, EmployeesView
 urlpatterns = [
     path('get/', UsersView.get),  # Include the users app URLs
     path('employees/', EmployeesView.get),  # Include the employees app URLs
+    path('details/', EmployeesView.get_details),  # add employee
+    path('create_employee/', EmployeesView.create_employee),  # Include the create employee URL
+    # Include the create employee URL
+    path('get_employees/', EmployeesView.get_employees),
+    path('delete_employee/<int:employee_id>/', EmployeesView.delete_employee),
     # Include the employees app URLs
     path('info/', EmployeesView.employees_summary),
     path('create_user/', UsersView.create_user),  # Include the create user URL
