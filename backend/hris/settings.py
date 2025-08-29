@@ -36,6 +36,7 @@ CORS_ALLOWED_ORIGINS = [
 
 ALLOWED_HOSTS = [
     "localhost",
+    "127.0.0.1",
     "192.168.157.55",
     "192.168.157.55:9000",  # Adjust this to your production frontend URL
     

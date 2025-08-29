@@ -4,6 +4,7 @@ from .models import Users, Employees  # Assuming you have a Users model defined
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 import json
+import os
 import datetime
 from django.utils.dateparse import parse_date
 from django.contrib.auth.models import User
@@ -23,6 +24,7 @@ from sections.models import Sections
 from sqlalchemy import text
 from db import SessionLocal
 import random
+import requests
 # Create your views here.
 
 
@@ -267,7 +269,48 @@ class EmployeesView:
         employees_list = list(records_list)
         # Return as JSON response
         return JsonResponse(employees_list, safe=False)
-    
+
+    @require_GET
+    def ncc_employees(request):
+        url = os.environ.get('SDXP_URL')
+        session = SessionLocal()
+        shift_employees_response = requests.get(f'{url}/ShiftRoster/GetShiftEmployees')
+        try:
+            shift_employees = shift_employees_response.json()
+        except Exception:
+            shift_employees = []
+        # Filter only NCC employees
+        ncc_employees = [emp for emp in shift_employees if emp.get('Shift_Type') == 'NCC']
+        query = text("""
+         SELECT
+            e.name as empname,
+            e.hris_id,
+            s.[Sdxp_Username]
+          FROM [dbo].[shift_user_map] s JOIN employees e ON e.erp_id= s.ErpID
+        """)
+        shiftdata = session.execute(query).fetchall()
+
+        # Prepare sets for fast comparison (case-insensitive, strip spaces)
+        ncc_names = set(str(emp.get('Name', '')).strip().lower() for emp in ncc_employees if emp.get('Name'))
+        ncc_usernames = set(str(emp.get('Name', '')).strip().lower() for emp in ncc_employees if emp.get('Name'))
+
+        matched_employees = []
+        for row in shiftdata:
+            empname = str(row.empname).strip().lower() if row.empname else ""
+            sdxp_username = str(row.Sdxp_Username).strip().lower() if row.Sdxp_Username else ""
+            # Compare Sdxp_Username and empname with NCC names
+            if empname in ncc_names or sdxp_username in ncc_usernames:
+                matched_employees.append({
+                    "empname": row.empname,
+                    "hris_id": row.hris_id
+                })
+
+        # Convert shiftdata to list of dicts (for original output)
+        shiftdata_list = [
+            dict(row._mapping) if hasattr(row, "_mapping") else dict(row)
+            for row in shiftdata
+        ]
+        return JsonResponse({'matched': matched_employees}, safe=False)
 
     @require_GET
     def get_employees(request):
@@ -346,8 +389,8 @@ class EmployeesView:
             employee.delete()
             return JsonResponse({'success': True}, status=200)
         except Employees.DoesNotExist:
-            return JsonResponse({'success': False, 'error': 'Employee not found'}, status=404)        
-    
+            return JsonResponse({'success': False, 'error': 'Employee not found'}, status=404)
+
     @require_GET
     def employees_summary(request):
         today = date.today()
@@ -388,7 +431,7 @@ class EmployeesView:
             }
             for section in sections_data
         ]
-        
+
         # fetching location data
         location_query = text('''
             SELECT id, name FROM locations
@@ -429,8 +472,6 @@ class EmployeesView:
         new_hris_id = EmployeesView.generate_random_hris_id(existing_hris_ids)
         return JsonResponse({"success": True, "sections": sections, "locations": locations, "grades": grades, "designations": designations, "new_hris_id": new_hris_id})
 
-
-
     @csrf_exempt
     @require_POST
     def create_employee(request):
@@ -443,7 +484,7 @@ class EmployeesView:
         for field in required_fields:
             if field not in data or data[field] in [None, ""]:
                 return JsonResponse({"success": False, "error": f"Field '{field}' is required"}, status=400)
-        
+
         try:
             employee = Employees.objects.create(
                 erp_id=str(data['erp_id']),
@@ -463,7 +504,7 @@ class EmployeesView:
             return JsonResponse({"success": False, "error": f"Missing required field: {str(e)}"}, status=400)
         except ValueError as e:
             return JsonResponse({"success": False, "error": f"Invalid value: {str(e)}"}, status=400)
-        
+
         except Exception as e:
             import traceback
             print("Unexpected error:", str(e))

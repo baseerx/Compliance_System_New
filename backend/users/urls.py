@@ -17,4 +17,5 @@ urlpatterns = [
     path('change-password/',UsersView.change_password),  # Include the change password URL
     path('get_auth_users/', UsersView.auth_users),  # Include the login URL
     path('delete_user/<int:user_id>/', UsersView.delete_user),  # Include the login URL
+    path('ncc_employees/', EmployeesView.ncc_employees),  # Include the NCC employees URL
 ]

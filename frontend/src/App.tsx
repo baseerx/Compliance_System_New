@@ -41,6 +41,8 @@ import ShiftAttendance from "./pages/Attendance/ShiftAttendance";
 import ShiftHistory from "./pages/Attendance/ShiftHistory";
 import RccShift from "./pages/Attendance/RccShift";
 import AddEmployee from "./pages/UserManagement/AddEmployee";
+import RccUpdateAttendance from "./pages/Attendance/RccUpdateAttendance";
+import NccUpdateAttendance from "./pages/Attendance/NccUpdateAttendance";
 export default function App() {
   return (
     <>
@@ -100,6 +102,15 @@ export default function App() {
                 path="/attendance/individual"
                 element={<IndividualAttendance />}
               />
+              <Route
+                path="/attendance/rcc-update"
+                element={<RccUpdateAttendance />}
+              />
+              <Route
+                path="/attendance/ncc-update"
+                element={<NccUpdateAttendance />}
+              />
+       
               <Route
                 path="/attendance/section"
                 element={<SectionAttendanceReport />}

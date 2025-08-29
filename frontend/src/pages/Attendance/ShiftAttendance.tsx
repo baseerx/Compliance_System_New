@@ -67,40 +67,41 @@ export default function ShiftAttendance() {
 
     const getShiftDetails = async () => {
         try {
-                    toast.loading(
-                      `Fetching attendance data for shift on ${data.date}`,{toastId: "attendance-fetch-success"}
-                    );
-          const response = await axios.post(`/attendance/shift-details/`,{ shiftid: data.shift,date: data.date });
-                const nccData = _.filter(response.data.attendance, (item) => item.shifttype === 'NCC');
+            toast.loading(
+            `Fetching attendance data for shift on ${data.date}`, { toastId: "attendance-fetch-success" }
+            );
+            const response = await axios.post(`/attendance/shift-details/`, { shiftid: data.shift, date: data.date });
+            const nccData = _.filter(response.data.attendance, (item) => item.shifttype === 'NCC');
             const cleanedData: AttendanceRow[] = nccData.map(
-              (item: any) => ({
+            (item: any) => ({
                 erp_id: item.erp_id,
                 name: item.name,
                 designation: item.designation,
                 section: item.section,
                 timestamp: item.timestamp
-                  ? moment(item.timestamp).format("YYYY-MM-DD HH:mm:ss")
-                  : "-",
+                ? moment(item.timestamp).format("YYYY-MM-DD HH:mm:ss")
+                : "-",
                 checkin_time: item.checkin_time
-                  ? moment(item.checkin_time).format("YYYY-MM-DD HH:mm:ss")
-                  : "-",
+                ? moment(item.checkin_time).format("YYYY-MM-DD HH:mm:ss")
+                : "-",
                 checkout_time: item.checkout_time
-                  ? moment(item.checkout_time).format("YYYY-MM-DD HH:mm:ss")
-                  : "-",
+                ? moment(item.checkout_time).format("YYYY-MM-DD HH:mm:ss")
+                : "-",
                 flag: item.flag,
                 shift_id: item.shift_id,
                 shiftname: item.shiftname,
                 shifttype: item.shifttype,
                 status: item.status,
                 lateintime: item.lateintime,
-              })
+            })
             );
-                    toast.dismiss("attendance-fetch-success");
-                    setAttendanceData(cleanedData);
-        // Handle the response and update state as needed
-      } catch (error: any) {
-        toast.error(error?.message || "An error occurred while fetching shift details.");
-      }
+            toast.dismiss("attendance-fetch-success");
+            setAttendanceData(cleanedData);
+        } catch (error: any) {
+            toast.dismiss("attendance-fetch-success");
+            setAttendanceData([]); // Blank the grid on error
+            toast.error("Shift is on off day");
+        }
     };
 
  
