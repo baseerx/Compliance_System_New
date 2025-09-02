@@ -190,7 +190,7 @@ export default function RccUpdateAttendance() {
     // Fetch employees & existing attendance
     const loadData = async () => {
       try {
-        const response = await axios.get("users/ncc_employees/");
+        const response = await axios.get("users/rcc_employees/");
         //   axios.get("/attendance/history/");
 
         // Remove duplicates by hris_id, keep only the first occurrence

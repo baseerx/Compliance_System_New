@@ -311,6 +311,48 @@ class EmployeesView:
             for row in shiftdata
         ]
         return JsonResponse({'matched': matched_employees}, safe=False)
+    
+    @require_GET
+    def rcc_employees(request):
+        url = os.environ.get('SDXP_URL')
+        session = SessionLocal()
+        shift_employees_response = requests.get(f'{url}/ShiftRoster/GetShiftEmployees')
+        try:
+            shift_employees = shift_employees_response.json()
+        except Exception:
+            shift_employees = []
+        # Filter only NCC employees
+        ncc_employees = [emp for emp in shift_employees if emp.get('Shift_Type') == 'RCC']
+        query = text("""
+         SELECT
+            e.name as empname,
+            e.hris_id,
+            s.[Sdxp_Username]
+          FROM [dbo].[shift_user_map] s JOIN employees e ON e.erp_id= s.ErpID
+        """)
+        shiftdata = session.execute(query).fetchall()
+
+        # Prepare sets for fast comparison (case-insensitive, strip spaces)
+        ncc_names = set(str(emp.get('Name', '')).strip().lower() for emp in ncc_employees if emp.get('Name'))
+        ncc_usernames = set(str(emp.get('Name', '')).strip().lower() for emp in ncc_employees if emp.get('Name'))
+
+        matched_employees = []
+        for row in shiftdata:
+            empname = str(row.empname).strip().lower() if row.empname else ""
+            sdxp_username = str(row.Sdxp_Username).strip().lower() if row.Sdxp_Username else ""
+            # Compare Sdxp_Username and empname with NCC names
+            if empname in ncc_names or sdxp_username in ncc_usernames:
+                matched_employees.append({
+                    "empname": row.empname,
+                    "hris_id": row.hris_id
+                })
+
+        # Convert shiftdata to list of dicts (for original output)
+        shiftdata_list = [
+            dict(row._mapping) if hasattr(row, "_mapping") else dict(row)
+            for row in shiftdata
+        ]
+        return JsonResponse({'matched': matched_employees}, safe=False)
 
     @require_GET
     def get_employees(request):
