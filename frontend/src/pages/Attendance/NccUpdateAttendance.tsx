@@ -15,6 +15,7 @@ import Button from "../../components/ui/button/Button";
 
 // --- Types ---
 type AttendanceFormData = {
+  id?:number
   employeeId: number | null;
   date: string;
   checkInTime: string;
@@ -22,11 +23,15 @@ type AttendanceFormData = {
 };
 
 type AttendanceRow = {
-  id: number;
-  employeeName: string;
-  date: string;
-  checkIn: string;
-  checkOut: string;
+    id: number;
+    uid?: number;
+    user_id: number;
+    checkin_time?: string;
+    checkout_time?: string;
+    punch?: number;
+    lateintime?: string;
+    status?: string;
+    timestamp: string;
 };
 
 const INITIAL_FORM: AttendanceFormData = {
@@ -43,14 +48,63 @@ export default function NccUpdateAttendance() {
   const [employeeOptions, setEmployeeOptions] = useState<
     { value: number; label: string }[]
   >([]);
+ const [updateFlag, setUpdateFlag] = useState<boolean>(false);
+// Table columns
+const columns: ColumnDef<AttendanceRow>[] = [
+    { accessorKey: "id", header: "ID" },
+    { accessorKey: "user_id", header: "HRIS ID" },
+    {
+        accessorKey: "checkin_time",
+        header: "Check-in Time",
+        cell: ({ row }) =>
+            row.original.checkin_time
+                ? moment(row.original.checkin_time).format("YYYY-MM-DD HH:mm:ss")
+                : "-",
+    },
+    {
+        accessorKey: "checkout_time",
+        header: "Check-out Time",
+        cell: ({ row }) =>
+            row.original.checkout_time
+                ? moment(row.original.checkout_time).format("YYYY-MM-DD HH:mm:ss")
+                : "-",
+    },
+    { accessorKey: "status", header: "Status" },
+    { accessorKey: "punch", header: "Punch" },
+    { accessorKey: "lateintime", header: "Late In Time" },
+    {
+        header: "Actions",
+        id: "actions",
+        cell: ({ row }) => (
+            <div className="flex gap-2">
+                <Button
+                    size="xs"
+                    variant="primary"
+                    onClick={() => handleEdit(row.original.id)}
+                >
+                    Edit
+                </Button>
+            </div>
+        ),
+    },
+];
 
-  // Table columns
-  const columns: ColumnDef<AttendanceRow>[] = [
-    { accessorKey: "employeeName", header: "Employee" },
-    { accessorKey: "date", header: "Date" },
-    { accessorKey: "checkIn", header: "Check-In" },
-    { accessorKey: "checkOut", header: "Check-Out" },
-  ];
+// Edit handler
+const handleEdit = (id:Number) => {
+    const row = attendanceData.find((row) => row.id === id);
+    if (row) {
+        setFormData({
+            id: row.id,
+            employeeId: row.user_id,
+            date: row.checkin_time ? moment(row.checkin_time).format("YYYY-MM-DD") : moment(row.timestamp).format("YYYY-MM-DD"),
+            checkInTime: row.checkin_time ? moment(row.checkin_time).format("HH:mm:ss") : "",
+            checkOutTime: row.checkout_time ? moment(row.checkout_time).format("HH:mm:ss") : "",
+        });
+       setUpdateFlag(true)
+    }
+};
+
+
 
   // --- Handlers ---
   const handleChange = (
@@ -61,8 +115,31 @@ export default function NccUpdateAttendance() {
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
-  };
+    };
 
+    useEffect(() => {
+   
+
+        fetchEmployeeData();
+    }, [formData.employeeId, formData.date]);
+
+    
+        const fetchEmployeeData = () => {
+          if (formData.employeeId && formData.date) {
+            axios
+              .post("/attendance/current_attendance/", {
+                empid: formData.employeeId,
+                date: formData.date,
+              })
+              .then((response) => {
+                const data = response.data.attendance;
+                setAttendanceData(data);
+              })
+              .catch((error) => {
+                console.error("Error fetching employee data:", error);
+              });
+          }
+        };
   const validate = (): Record<string, string> => {
     const fieldErrors: Record<string, string> = {};
     if (!formData.employeeId) fieldErrors.employeeId = "Employee is required";
@@ -78,7 +155,7 @@ export default function NccUpdateAttendance() {
     const fieldErrors = validate();
     if (Object.keys(fieldErrors).length > 0) {
       setErrors(fieldErrors);
-      toast.error("Please fix the errors in the form.");
+      toast.error("all fields are required.");
       return;
     }
 
@@ -88,16 +165,16 @@ export default function NccUpdateAttendance() {
         date: formData.date,
         checkIn: formData.checkInTime,
         checkOut: formData.checkOutTime,
-      };
-     console.log(payload);
-    //   await axios.post("/attendance/update/", payload);
-    //   toast.success("Attendance updated successfully");
+        };
+        if (updateFlag) {
+            await axios.post("/attendance/shift_update/", payload);
+            toast.success("Attendance updated successfully");
+        } else {
+            await axios.post("/attendance/shift_add/", payload);
+            toast.success("Attendance added successfully");
+        }
+        fetchEmployeeData();
 
-    //   // Refresh table
-    //   const res = await axios.get("/attendance/history/");
-    //   setAttendanceData(res.data);
-
-    //   setFormData(INITIAL_FORM);
       setErrors({});
     } catch (error: any) {
       const message =
@@ -206,7 +283,7 @@ export default function NccUpdateAttendance() {
                 variant="primary"
                 onClick={fetchAttendanceData}
               >
-                Add
+                {updateFlag ? "Update" : "Add"} Attendance
               </Button>
             </div>
           </div>
@@ -214,8 +291,7 @@ export default function NccUpdateAttendance() {
           <EnhancedDataTable<AttendanceRow>
             data={attendanceData}
             columns={columns}
-            fromdate={formData.date}
-            todate={formData.date}
+           
           />
         </ComponentCard>
       </div>

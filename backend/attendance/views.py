@@ -1229,3 +1229,216 @@ GROUP BY Shift_Name;
             return JsonResponse({"error": f"Database query failed: {str(e)}"}, status=500)
         finally:
             session.close()
+    
+    @csrf_exempt
+    @require_POST
+    def current_attendance(request):
+        # Your logic for handling current attendance
+        try:
+            request_data = json.loads(request.body.decode('utf-8'))
+        except Exception as e:
+            return JsonResponse({"error": "Invalid JSON format"}, status=400)
+        empid = request_data.get("empid")
+        date = request_data.get("date")
+        if not empid or not date:
+            return JsonResponse({"error": "empid and date are required"}, status=400)
+
+        # Fetch current attendance data from the database
+        session = SessionLocal()
+        try:
+            query = text("""
+                SELECT 
+                    MIN(CASE WHEN status = 'Checked In' THEN timestamp END) AS checkin_time,
+                    MAX(CASE WHEN status IN ('Checked Out', 'Early Checked Out') THEN timestamp END) AS checkout_time,
+                    MIN(id) AS id,
+                    MIN(uid) AS uid,
+                    user_id,
+                    MIN(punch) AS punch,
+                    MIN(lateintime) AS lateintime
+                FROM [dbo].[attendance]
+                WHERE user_id = :empid 
+                AND CAST(timestamp AS DATE) = :date
+                GROUP BY user_id
+            """)
+            result = session.execute(query, {"empid": empid, "date": date})
+            attendance = result.fetchall()
+            # Serialize attendance rows to dicts
+            attendance_list = [
+                {
+                    "id": row.id,
+                    "uid": row.uid,
+                    "user_id": row.user_id,
+                    "checkin_time": row.checkin_time.isoformat() if row.checkin_time else None,
+                    "checkout_time": row.checkout_time.isoformat() if row.checkout_time else None,
+                    "status": (
+                        "Present" if row.checkin_time or row.checkout_time else "Absent"
+                    ),
+                    "punch": row.punch,
+                    "lateintime": row.lateintime
+                }
+                for row in attendance
+            ]
+            return JsonResponse({"attendance": attendance_list}, status=200)
+        except Exception as e:
+            return JsonResponse({"error": "Attendance not found"}, status=404)
+        finally:
+            session.close()
+    
+    @csrf_exempt
+    @require_POST
+    def shift_add(request):
+        try:
+            request_data = json.loads(request.body.decode('utf-8'))
+        except Exception:
+            return JsonResponse({"error": "Invalid JSON format"}, status=400)
+        empid = request_data.get("employeeId")
+        date_str = request_data.get("date")
+        check_in_str = request_data.get("checkIn")
+        check_out_str = request_data.get("checkOut")
+        if not empid or not date_str or not check_in_str or not check_out_str:
+            return JsonResponse({"error": "All fields are required"}, status=400)
+
+        try:
+            # Parse date and time, combine to datetime
+            # Accepts check_in/check_out as "HH:MM" or "HH:MM:SS"
+            try:
+                date_obj = datetime.strptime(date_str, "%Y-%m-%d").date()
+            except ValueError:
+                return JsonResponse({"error": "Date must be in YYYY-MM-DD format"}, status=400)
+            try:
+                check_in_time = datetime.strptime(check_in_str, "%H:%M").time()
+            except ValueError:
+                try:
+                    check_in_time = datetime.strptime(check_in_str, "%H:%M:%S").time()
+                except ValueError:
+                    return JsonResponse({"error": "CheckIn time must be in HH:MM or HH:MM:SS format"}, status=400)
+            try:
+                check_out_time = datetime.strptime(check_out_str, "%H:%M").time()
+            except ValueError:
+                try:
+                    check_out_time = datetime.strptime(check_out_str, "%H:%M:%S").time()
+                except ValueError:
+                    return JsonResponse({"error": "CheckOut time must be in HH:MM or HH:MM:SS format"}, status=400)
+
+            check_in_dt = datetime.combine(date_obj, check_in_time)
+            check_out_dt = datetime.combine(date_obj, check_out_time)
+
+            uid_list = Attendance.objects.all().values_list('uid', flat=True)
+            unique_uid = AttendanceView.get_random_uid(uid_list)
+            new_shift = Attendance.objects.create(
+                uid=unique_uid,
+                user_id=empid,
+                timestamp=check_in_dt,
+                status='Checked In',
+                punch=1,
+                lateintime=''
+            )
+            new_shift_out = Attendance.objects.create(
+                uid=unique_uid,
+                user_id=empid,
+                timestamp=check_out_dt,
+                status='Checked Out',
+                punch=1,
+                lateintime=''
+            )
+            return JsonResponse({"message": "Shift added successfully"}, status=201)
+        except Exception as e:
+            print(f"Error adding shift: {e}")
+            return JsonResponse({"error": f"Failed to add shift {e}"}, status=500)
+    
+    @csrf_exempt
+    @require_POST
+    def shift_update(request):
+        try:
+            request_data = json.loads(request.body.decode('utf-8'))
+        except Exception:
+            return JsonResponse({"error": "Invalid JSON format"}, status=400)
+        empid = request_data.get("employeeId")
+        date_str = request_data.get("date")
+        check_in_str = request_data.get("checkIn")
+        check_out_str = request_data.get("checkOut")
+        if not empid or not date_str or not check_in_str or not check_out_str:
+            return JsonResponse({"error": "All fields are required"}, status=400)
+
+        try:
+            # Parse date and time, combine to datetime
+            try:
+                date_obj = datetime.strptime(date_str, "%Y-%m-%d").date()
+            except ValueError:
+                return JsonResponse({"error": "Date must be in YYYY-MM-DD format"}, status=400)
+            try:
+                check_in_time = datetime.strptime(check_in_str, "%H:%M").time()
+            except ValueError:
+                try:
+                    check_in_time = datetime.strptime(check_in_str, "%H:%M:%S").time()
+                except ValueError:
+                    return JsonResponse({"error": "CheckIn time must be in HH:MM or HH:MM:SS format"}, status=400)
+            try:
+                check_out_time = datetime.strptime(check_out_str, "%H:%M").time()
+            except ValueError:
+                try:
+                    check_out_time = datetime.strptime(check_out_str, "%H:%M:%S").time()
+                except ValueError:
+                    return JsonResponse({"error": "CheckOut time must be in HH:MM or HH:MM:SS format"}, status=400)
+
+            check_in_dt = datetime.combine(date_obj, check_in_time)
+            check_out_dt = datetime.combine(date_obj, check_out_time)
+
+            # Update Checked In record if exists, else create
+            checkin_qs = Attendance.objects.filter(
+                user_id=empid,
+                status='Checked In',
+                timestamp__date=date_obj
+            )
+            if checkin_qs.exists():
+                checkin_qs.update(
+                    timestamp=check_in_dt,
+                    punch=1,
+                    lateintime=''
+                )
+            else:
+                uid_list = Attendance.objects.all().values_list('uid', flat=True)
+                unique_uid = AttendanceView.get_random_uid(uid_list)
+                Attendance.objects.create(
+                    uid=unique_uid,
+                    user_id=empid,
+                    timestamp=check_in_dt,
+                    status='Checked In',
+                    punch=1,
+                    lateintime=''
+                )
+
+            # Update Checked Out record if exists, else create
+            checkout_qs = Attendance.objects.filter(
+                user_id=empid,
+                status='Checked Out',
+                timestamp__date=date_obj
+            )
+            if checkout_qs.exists():
+                checkout_qs.update(
+                    timestamp=check_out_dt,
+                    punch=1,
+                    lateintime=''
+                )
+            else:
+                uid_list = Attendance.objects.all().values_list('uid', flat=True)
+                unique_uid = AttendanceView.get_random_uid(uid_list)
+                Attendance.objects.create(
+                    uid=unique_uid,
+                    user_id=empid,
+                    timestamp=check_out_dt,
+                    status='Checked Out',
+                    punch=1,
+                    lateintime=''
+                )
+
+            return JsonResponse({"message": "Shift updated successfully"}, status=200)
+        except Exception as e:
+            print(f"Error updating shift: {e}")
+            return JsonResponse({"error": f"Failed to update shift {e}"}, status=500)
+
+    @staticmethod
+    def get_random_uid(uid_list):
+        if not uid_list:
+            return 1
+        return max(uid_list) + 1

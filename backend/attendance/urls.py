@@ -14,4 +14,7 @@ urlpatterns = [
     path('get-shifts/', AttendanceView.getshifts),
     path('shift-details/', AttendanceView.shift_details),
     path('shift-history/', AttendanceView.shift_history),
+    path('current_attendance/', AttendanceView.current_attendance),
+    path('shift_add/', AttendanceView.shift_add),
+    path('shift_update/', AttendanceView.shift_update),
 ]
