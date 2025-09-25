@@ -57,11 +57,98 @@ def get_leave_requests(request,erpid):
     sessions.close()
     return JsonResponse({"leaves": data},status=200)
 
+
+@csrf_exempt
+@require_POST
+def get_leaves_count(request):
+    data = json.loads(request.body.decode('utf-8'))
+    erpid = data.get("erp_id", 0)
+    section = data.get("section", None)  # Expecting section from frontend
+
+    sessions = SessionLocal()
+
+    if erpid == 0 and section:
+        # Case 1: erp_id is zero → get all employees in given section
+        query = text("""
+            SELECT
+                e.section_id,
+                e.erp_id,
+                e.name AS employee_name,
+                e.id AS employee_id,
+                s.name AS section_name
+            FROM employees e
+            LEFT JOIN sections s ON e.section_id = s.id
+            WHERE e.flag = 1
+              AND e.section_id = :section
+        """)
+        employees = sessions.execute(query, {"section": section}).fetchall()
+
+    else:
+        # Case 2: erp_id provided → get only that employee inside the section
+        query = text("""
+            SELECT
+                e.section_id,
+                e.erp_id,
+                e.name AS employee_name,
+                e.id AS employee_id,
+                s.name AS section_name
+            FROM employees e
+            LEFT JOIN sections s ON e.section_id = s.id
+            WHERE e.flag = 1
+              AND e.section_id = :section
+              AND e.erp_id = :epid
+        """)
+        employees = sessions.execute(
+            query, {"section": section, "epid": erpid}).fetchall()
+
+    result = []
+    for emp in employees:
+        # --- leaves table ---
+        leaves_query = text("""
+            SELECT start_date, end_date
+            FROM leaves
+            WHERE erp_id = :empid
+        """)
+        leaves = sessions.execute(leaves_query, {"empid": emp[1]}).fetchall()
+
+        leave_count = 0
+        for leave in leaves:
+            if leave[0] and leave[1]:
+                leave_count += (leave[1] - leave[0]).days + 1
+
+        # --- official_work_leaves table ---
+        official_query = text("""
+            SELECT start_date, end_date
+            FROM official_work_leaves
+            WHERE erp_id = :empid
+              AND status = 'Approved'
+        """)
+        official_leaves = sessions.execute(
+            official_query, {"empid": emp[1]}).fetchall()
+
+        for leave in official_leaves:
+            if leave[0] and leave[1]:
+                leave_count += (leave[1] - leave[0]).days + 1
+
+        # --- Final append ---
+        result.append({
+            "id": emp[3],
+            "employee_id": emp[3],
+            "employee_name": emp[2],
+            "section": emp[4],  # section name from join
+            "erp_id": emp[1],
+            "leave_count": leave_count
+        })
+
+    sessions.close()
+    return JsonResponse({"attendance": result}, status=200)
+
+
 @csrf_exempt
 @require_POST
 def create_leave_request(request):
     data = json.loads(request.body.decode('utf-8'))
-    print("Received data:", data)
+   
     leave = LeaveModel.objects.create(
         erp_id=data.get("erp_id", 0),
         employee_id=data.get("employee_id", 0),

@@ -43,6 +43,7 @@ import RccShift from "./pages/Attendance/RccShift";
 import AddEmployee from "./pages/UserManagement/AddEmployee";
 import RccUpdateAttendance from "./pages/Attendance/RccUpdateAttendance";
 import NccUpdateAttendance from "./pages/Attendance/NccUpdateAttendance";
+import LeaveHistory from "./pages/Leaves/LeaveHistory";
 export default function App() {
   return (
     <>
@@ -97,6 +98,10 @@ export default function App() {
               <Route
                 path="/leaves/official-work"
                 element={<OfficialWork />}
+              />
+              <Route
+                path="/leaves/leave-history"
+                element={<LeaveHistory />}
               />
               <Route
                 path="/attendance/individual"

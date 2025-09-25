@@ -125,26 +125,30 @@ class AttendanceView:
         if row:
             section_data = {"hrisid": row.hrisid, "name": row.name}
             query = text("""
-               SELECT
+                SELECT
                     e.id AS id,
                     e.erp_id AS erp_id,
                     e.name AS name,
                     d.title AS designation,
                     s.name AS section,
-                         g.name as grade,
-                    a.uid AS uid,
-                    e.hris_id AS user_id,
-                    a.timestamp AS timestamp,
-                    a.status AS status,
-                    a.lateintime AS lateintime
-                 
+                    g.name AS grade,
+                    MAX(CASE WHEN a.status = 'Checked In' THEN a.timestamp END) AS checkin_time,
+                    MAX(CASE WHEN a.status IN ('Checked Out', 'Early Checked Out') THEN a.timestamp END) AS checkout_time
                 FROM employees e
                 LEFT JOIN sections s ON s.id = e.section_id
                 LEFT JOIN designations d ON d.id = e.designation_id
-                         LEFT JOIN grades g ON g.id = e.grade_id
+                LEFT JOIN grades g ON g.id = e.grade_id
                 LEFT JOIN attendance a ON e.hris_id = a.user_id 
                     AND CAST(a.timestamp AS DATE) = :today
                 WHERE e.section_id = (SELECT id FROM sections WHERE name = :section_name) and e.flag = 1
+                GROUP BY 
+                    e.id,
+                    e.erp_id,
+                    e.name,
+                    d.title,
+                    g.name,
+                    s.name,
+                    e.hris_id
                 ORDER BY g.name desc
             """)
 
@@ -152,21 +156,6 @@ class AttendanceView:
                 query, {"today": today, "section_name": row.name}).fetchall()
             records = []
             for row in result:
-                check_in_deadline = time(9, 0)
-                check_out_deadline = time(14, 30)
-                if row.status == 'Checked In':
-                    punch_time = row.timestamp.time() if row.timestamp else None
-                    if punch_time and punch_time > check_in_deadline:
-                        late_status = 'Late'
-                    else:
-                        late_status = 'On time'
-
-                elif row.status == 'Checked Out':
-                        late_status = 'On time'
-                elif row.status == 'Early Checked Out':
-                    late_status = 'Early'
-                else:
-                    late_status = '-'
                 # Integrate leave and holiday check for each employee for today
                 flag = 'Absent'
                 leave_result = session.execute(text("""
@@ -181,7 +170,7 @@ class AttendanceView:
                                         AND CAST(start_date AS DATE) <= CAST(:att_date AS DATE)
                                         AND CAST(end_date AS DATE) >= CAST(:att_date AS DATE)
                                     """), {"erp_id": row.erp_id, "att_date": today}).first()
-                if row.uid is not None:
+                if row.checkin_time is not None or row.checkout_time is not None:
                     flag = 'Present'
                 else:
                     if leave_result:
@@ -204,12 +193,10 @@ class AttendanceView:
                     'designation': row.designation,
                     'section': row.section,
                     'grade': row.grade,
-                    'uid': row.uid,
-                    'user_id': row.user_id,
-                    'timestamp': '-' if row.timestamp is None else row.timestamp,
-                    'late': '-' if flag == 'Absent' else late_status,
-                    'status': '-' if row.status is None else row.status,
-                    'flag': flag})
+                    'checkin_time': row.checkin_time if row.checkin_time is not None else '-',
+                    'checkout_time': row.checkout_time if row.checkout_time is not None else '-',
+                    'flag': flag
+                })
             return JsonResponse(records, safe=False)
         else:
             section_data = None
