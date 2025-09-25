@@ -57,9 +57,13 @@ def get_leave_requests(request,erpid):
 @require_POST
 def create_official_work_request(request):
     data = json.loads(request.body.decode('utf-8'))
+    
+    if not data.get("employee_id"):
+        return JsonResponse({"error": "employee_id is required"}, status=400)
+
     official_work = OfficialWorkModel.objects.create(
         erp_id=data.get("erp_id", 0),
-        employee_id=data.get("employee_id", 0),
+        employee_id=data.get("employee_id"),
         leave_type=data.get("leave_type", ""),  
         reason=data.get("reason", ""),
         status=data.get("status", ""),
