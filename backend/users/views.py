@@ -113,6 +113,9 @@ class UsersView:
         if User.objects.filter(username=username).exists():
             return JsonResponse({'success': False, 'error': 'Username already exists'}, status=400)
 
+        if CustomUser.objects.filter(erpid=erpid).exists():
+            return JsonResponse({'success': False, 'error': 'ERP ID already exists'}, status=400)        
+
         user = User.objects.create(
             password=make_password(password),
             last_login=None,

@@ -46,12 +46,13 @@ export default function IndividualAttendance() {
     "Umrah Leave",
     "Hajj Leave",
     "Shift Leave",
-    "Recreational Leave",
+    "Rest & Recreational Leave",
     "Compensatory Leave",
     "Short Leave",
     "Study Leave",
     "Marriage Leave",
     "Paternity Leave",
+    "Earned Leave",
   ];
 
   useEffect(() => {

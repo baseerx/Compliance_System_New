@@ -53,6 +53,7 @@ def get_leave_requests(request,erpid):
     sessions.close()
     return JsonResponse({"leaves": data})
 
+
 @csrf_exempt
 @require_POST
 def create_official_work_request(request):

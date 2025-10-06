@@ -107,7 +107,7 @@ def get_leaves_count(request):
         leaves_query = text("""
             SELECT start_date, end_date
             FROM leaves
-            WHERE erp_id = :empid
+            WHERE erp_id = :empid AND status='approved'
         """)
         leaves = sessions.execute(leaves_query, {"empid": emp[1]}).fetchall()
 
@@ -121,7 +121,7 @@ def get_leaves_count(request):
             SELECT start_date, end_date
             FROM official_work_leaves
             WHERE erp_id = :empid
-              AND status = 'Approved'
+              AND status = 'approved'
         """)
         official_leaves = sessions.execute(
             official_query, {"empid": emp[1]}).fetchall()
