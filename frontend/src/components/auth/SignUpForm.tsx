@@ -69,15 +69,19 @@ export default function SignUpForm() {
         password: "",
         verify_password: "",
         erpid: "",
-    
+
         date_joined: moment().format("YYYY-MM-DD"),
       });
-        navigate('/dashboard');
+      navigate("/dashboard");
       setErrors({});
     } catch (error: any) {
+  
+
       toast.error(
         "Registration failed: " +
-          (error?.response?.data?.message || error.message)
+          (error?.response?.data?.error ||
+            error?.response?.data?.message ||
+            error.message)
       );
     }
   };

@@ -106,7 +106,8 @@ export default function IndividualAttendance() {
   const getEmployeesLeaves = async () => {
       try {
         
-      const response = await axios.get(`/leaves/get/${user.erpid}/`);
+          const response = await axios.get(`/leaves/get/${user.erpid}/`);
+         
       const cleanedData: AttendanceRow[] = response.data.leaves.map(
         (item: any) => {
           const picked = _.pick(item, [
