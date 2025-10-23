@@ -565,13 +565,12 @@ class AttendanceView:
                 SELECT
                     e.erp_id AS erp_id,
                     e.name AS name,
-                    MAX(a.timestamp) AS timestamp, -- Latest timestamp for the day
                     d.title AS designation,
                     g.name AS grade,
                     s.name AS section,
-                    a.lateintime AS lateintime,
-                    CAST(a.timestamp AS date) AS attendance_date,
-                    MAX(CASE WHEN a.status = 'Checked In' THEN a.timestamp END) AS checkin_time,
+                    MAX(CASE WHEN a.status = 'Checked In' THEN a.lateintime END) AS lateintime,
+                    CAST(a.timestamp AS DATE) AS timestamp,
+                    MIN(CASE WHEN a.status = 'Checked In' THEN a.timestamp END) AS checkin_time,
                     MAX(CASE WHEN a.status IN ('Checked Out', 'Early Checked Out') THEN a.timestamp END) AS checkout_time
                 FROM employees e
                 LEFT JOIN sections s ON s.id = e.section_id
@@ -579,7 +578,7 @@ class AttendanceView:
                 LEFT JOIN grades g ON g.id = e.grade_id
                 LEFT JOIN attendance a 
                     ON e.hris_id = a.user_id 
-                    AND CAST(a.timestamp AS date) BETWEEN :fromdate AND :todate
+                    AND CAST(a.timestamp AS DATE) BETWEEN :fromdate AND :todate
                 WHERE e.flag = 1 
                     AND e.section_id = (SELECT section_id FROM employees WHERE erp_id = :erpid)
                     AND e.grade_id <= (SELECT grade_id FROM employees WHERE erp_id = :erpid)
@@ -589,16 +588,17 @@ class AttendanceView:
                     d.title, 
                     g.name, 
                     s.name, 
-                    a.lateintime, 
-                    CAST(a.timestamp AS date)
+                    CAST(a.timestamp AS DATE)
+                ORDER BY e.erp_id, timestamp
             """)
 
             result = session.execute(
                 query, {"fromdate": fromdate, "todate": todate, "erpid": erp_id})
             rows = result.fetchall()
+          
             for row in rows:
                 flag = 'Absent'
-                att_date = row.timestamp.date() if row.timestamp else None
+                att_date = row.timestamp if row.timestamp else None
                 leave_result = session.execute(text("""
                         SELECT leave_type FROM leaves
                         WHERE erp_id = :erp_id

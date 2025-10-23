@@ -11,29 +11,31 @@ from db import SessionLocal
 @require_GET
 def get_leave_requests(request,erpid):
     leaves = LeaveModel.objects.all()
-  
     data=[]
     sessions= SessionLocal()
     query = text("""
- SELECT
-    l.id,
-    e.name AS employee_name,
-    l.employee_id,
-    l.erp_id,
-    l.leave_type,
-    l.head_erpid,
-    h.name AS headname,
-    l.start_date,
-    l.end_date,
-    l.reason,
-    l.status,
-    l.created_at
-FROM leaves l
-LEFT JOIN employees e ON l.erp_id = e.erp_id
-LEFT JOIN employees h ON l.head_erpid = h.erp_id
-WHERE l.head_erpid = :epid
-ORDER BY l.created_at DESC;
-
+        SELECT
+            l.id,
+            e.name AS employee_name,
+            l.employee_id,
+            l.erp_id,
+            l.leave_type,
+            l.head_erpid,
+            (SELECT name FROM employees WHERE erp_id = l.head_erpid) AS headname,
+            l.start_date,
+            l.end_date,
+            l.reason,
+            l.status,
+            l.created_at
+        FROM leaves l
+        LEFT JOIN employees e 
+            ON l.erp_id = e.erp_id
+        LEFT JOIN employees h
+            ON l.head_erpid = h.erp_id
+        WHERE e.flag = 1
+          AND e.section_id = (SELECT section_id FROM employees WHERE erp_id = :epid)
+    
+        ORDER BY l.created_at DESC
     """)
     result = sessions.execute(query, {"epid": erpid}).fetchall()
     
