@@ -22,7 +22,7 @@ type AttendanceRow = {
   leave_type: string;
   start_date: string;
   end_date: string;
-    head?: any;
+  head?: any;
   head_erpid?: any;
   reason: string;
   status?: string;
@@ -31,8 +31,8 @@ type AttendanceRow = {
 
 export default function IndividualAttendance() {
   const [leaves, setLeaves] = useState<AttendanceRow[]>([]);
-  const user= JSON.parse(localStorage.getItem("user") || "{}");
-  
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+
   const [options, setOptions] = useState<{ label: string; value: string }[]>(
     []
   );
@@ -59,19 +59,21 @@ export default function IndividualAttendance() {
     fetchEmployeesOptions();
     getEmployeesLeaves();
   }, []);
-    const handleApproveLeave = async (id: any) => {
-        const action = id.toString().split('-')[1];
-        const empid = parseInt(id.toString().split('-')[0]);
- 
-        try {
-        
+  const handleApproveLeave = async (id: any) => {
+    const action = id.toString().split("-")[1];
+    const empid = parseInt(id.toString().split("-")[0]);
+
+    try {
       if (!empid || !action) {
-          toast.error("Invalid leave request ID or action");
-          return;
-            }
-            
+        toast.error("Invalid leave request ID or action");
+        return;
+      }
+
       if (window.confirm(`Are you sure you want to ${action} this leave?`)) {
-        const response = await axios.post("/leaves/approve/", { recordid: Number(empid), action: action });
+        const response = await axios.post("/leaves/approve/", {
+          recordid: Number(empid),
+          action: action,
+        });
         console.log("Leave approval response:", response.data);
         getEmployeesLeaves();
         toast.success("Leave approved successfully");
@@ -80,15 +82,15 @@ export default function IndividualAttendance() {
       console.error("Error approving leave:", error);
       toast.error("Failed to approve leave");
     }
-    };
-    
+  };
+
   const [data, setData] = useState<AttendanceRow>({
     erp_id: 0,
     employee_id: 0,
     leave_type: "",
     reason: "",
     status: user.grade_id >= 9 ? "approved" : "pending",
-    head: user.grade_id>=9?user.erpid:"",
+    head: user.grade_id >= 9 ? user.erpid : "",
     start_date: moment().format("YYYY-MM-DD").toString(),
     end_date: moment().format("YYYY-MM-DD").toString(),
   });
@@ -104,10 +106,9 @@ export default function IndividualAttendance() {
   });
 
   const getEmployeesLeaves = async () => {
-      try {
-        
-          const response = await axios.get(`/leaves/get/${user.erpid}/`);
-         
+    try {
+      const response = await axios.get(`/leaves/get/${user.erpid}/`);
+
       const cleanedData: AttendanceRow[] = response.data.leaves.map(
         (item: any) => {
           const picked = _.pick(item, [
@@ -131,86 +132,90 @@ export default function IndividualAttendance() {
       toast.error("Failed to load employee leaves");
     }
   };
-const columns: ColumnDef<AttendanceRow>[] = [
+  const columns: ColumnDef<AttendanceRow>[] = [
     {
-        header: "ERP ID",
-        accessorKey: "erp_id",
+      header: "ERP ID",
+      accessorKey: "erp_id",
     },
     {
-        header: "Head ERP ID",
-        accessorKey: "head_erpid",
-        
+      header: "Head ERP ID",
+      accessorKey: "head_erpid",
     },
     {
-        header: "Name",
-        accessorKey: "employee_name",
+      header: "Name",
+      accessorKey: "employee_name",
     },
-  
+
     {
-        header: "Leave Type",
-        accessorKey: "leave_type",
-    },
-    {
-        header: "Start Date",
-        accessorKey: "start_date",
+      header: "Leave Type",
+      accessorKey: "leave_type",
     },
     {
-        header: "End Date",
-        accessorKey: "end_date",
+      header: "Start Date",
+      accessorKey: "start_date",
     },
     {
-        header:"Leave Count",
-        accessorKey: "leave_count",
-        cell: ({ row }) => {
-            const start = moment(row.original.start_date);
-            const end = moment(row.original.end_date);
-            return end.diff(start, 'days') + 1; // +1 to include the start date
-        }
+      header: "End Date",
+      accessorKey: "end_date",
     },
     {
-        header: "Reason",
-        accessorKey: "reason",
+      header: "Leave Count",
+      accessorKey: "leave_count",
+      cell: ({ row }) => {
+        const start = moment(row.original.start_date);
+        const end = moment(row.original.end_date);
+        return end.diff(start, "days") + 1; // +1 to include the start date
+      },
     },
     {
-        header: "Status",
-        accessorKey: "status",
-        cell: ({ getValue }) => {
-            const value = getValue<string>();
-            const color =
-                value?.toLowerCase() === "pending" || value?.toLowerCase() === "rejected"
-                    ? "inline-flex items-center px-6 py-0.5 justify-center gap-1 rounded-full font-semibold text-theme-lg bg-warning-50 text-warning-600 dark:bg-warning-500/15 dark:text-warning-500"
-                    : value?.toLowerCase() === "approved"
-                    ? "inline-flex items-center px-6 py-0.5 justify-center gap-1 rounded-full font-semibold text-theme-lg bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500"
-                    : "";
-            return <span className={color}>{value}</span>;
-        },
+      header: "Reason",
+      accessorKey: "reason",
+    },
+    {
+      header: "Status",
+      accessorKey: "status",
+      cell: ({ getValue }) => {
+        const value = getValue<string>();
+        const color =
+          value?.toLowerCase() === "pending" ||
+          value?.toLowerCase() === "rejected"
+            ? "inline-flex items-center px-6 py-0.5 justify-center gap-1 rounded-full font-semibold text-theme-lg bg-warning-50 text-warning-600 dark:bg-warning-500/15 dark:text-warning-500"
+            : value?.toLowerCase() === "approved"
+            ? "inline-flex items-center px-6 py-0.5 justify-center gap-1 rounded-full font-semibold text-theme-lg bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500"
+            : "";
+        return <span className={color}>{value}</span>;
+      },
     },
     // Only show action columns if status is pending
     {
-        header: "Actions",
-        id: "actions-approve",
-        cell: ({ row }) =>
-            row.original.status?.toLowerCase() === "pending" && row.original.head_erpid === user.erpid ? (
-              
-                <div className="flex gap-2">
-                    <Button
-                        size="xs"
-                        variant="primary"
-                        onClick={() => handleApproveLeave(`${row.original.id?.toString()}-approve`)}
-                    >
-                        Approve
-                    </Button>
-                    <Button
-                        size="xs"
-                        variant="outline"
-                        onClick={() => handleApproveLeave(`${row.original.id?.toString()}-reject`)}
-                    >
-                        Reject
-                    </Button>
-                </div>
-            ) : null,
-    }
-];
+      header: "Actions",
+      id: "actions-approve",
+      cell: ({ row }) =>
+        row.original.status?.toLowerCase() === "pending" &&
+        row.original.head_erpid === user.erpid ? (
+          <div className="flex gap-2">
+            <Button
+              size="xs"
+              variant="primary"
+              onClick={() =>
+                handleApproveLeave(`${row.original.id?.toString()}-approve`)
+              }
+            >
+              Approve
+            </Button>
+            <Button
+              size="xs"
+              variant="outline"
+              onClick={() =>
+                handleApproveLeave(`${row.original.id?.toString()}-reject`)
+              }
+            >
+              Reject
+            </Button>
+          </div>
+        ) : null,
+    },
+  ];
   const fetchEmployeesOptions = async () => {
     try {
       const response = await axios.get("/users/employees/");
@@ -246,18 +251,24 @@ const columns: ColumnDef<AttendanceRow>[] = [
         });
         return;
       }
-    
-      const response = await axios.post("/leaves/apply/", data);
-      console.log("Leave application response:", response.data);
-      setData({
-        erp_id: 0,
-        employee_id: 0,
-        leave_type: "",
-        reason: "",
-        status: "",
-        start_date: moment().format("YYYY-MM-DD").toString(),
-        end_date: moment().format("YYYY-MM-DD").toString(),
-      });
+
+      if (window.confirm("Are you sure you want to apply for this leave?")) {
+        const response = await axios.post("/leaves/apply/", data);
+        console.log("Leave application response:", response.data);
+        }
+        else {
+            return;
+        }
+
+      //   setData({
+      //     erp_id: 0,
+      //     employee_id: 0,
+      //     leave_type: "",
+      //     reason: "",
+      //     status: "",
+      //     start_date: moment().format("YYYY-MM-DD").toString(),
+      //     end_date: moment().format("YYYY-MM-DD").toString(),
+      //   });
       getEmployeesLeaves();
       toast.success("Leave application submitted successfully");
     } catch (error) {
@@ -375,7 +386,7 @@ const columns: ColumnDef<AttendanceRow>[] = [
             </div>
             <div className="my-5">
               <TextArea
-                              value={data.reason}
+                value={data.reason}
                 placeholder="Enter reason for leave"
                 onChange={(value) => {
                   setData({ ...data, reason: value });

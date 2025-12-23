@@ -228,19 +228,23 @@ const leavetype = [
         });
         return;
       }
-
-        const response = await axios.post("/officialwork/apply/", data);
-        console.log("Response:", response.data);
-      setData({
-        erp_id: 0,
-        employee_id: 0,
-        leave_type: "",
-        reason: "",
-        status: "",
-        head_erpid: "",
-        start_date: moment().format("YYYY-MM-DD").toString(),
-        end_date: moment().format("YYYY-MM-DD").toString(),
-      });
+        if (window.confirm("Are you sure you want to apply for this leave?")) {
+            const response = await axios.post("/officialwork/apply/", data);
+            console.log("Response:", response.data);
+        }
+        else {
+            return;
+        }
+    //   setData({
+    //     erp_id: null,
+    //     employee_id: null,
+    //     leave_type: "",
+    //     reason: "",
+    //     status: "",
+    //     head_erpid: "",
+    //     start_date: moment().format("YYYY-MM-DD").toString(),
+    //     end_date: moment().format("YYYY-MM-DD").toString(),
+    //   });
       getEmployeesLeaves();
       toast.success("Leave application submitted successfully");
     } catch (error) {
