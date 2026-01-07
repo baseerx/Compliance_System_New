@@ -12,6 +12,7 @@ class OfficialWorkModel(models.Model):
     end_date = models.DateField(null=True, blank=True)
     reason = models.TextField(null=True, blank=True)
     status = models.CharField(max_length=20, default='Pending')
+    approved_by = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:

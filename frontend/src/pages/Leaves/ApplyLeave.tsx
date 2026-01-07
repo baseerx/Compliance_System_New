@@ -26,6 +26,7 @@ type AttendanceRow = {
   head_erpid?: any;
   reason: string;
   status?: string;
+  approved_by?: string;
   created_at?: string;
 };
 
@@ -54,6 +55,7 @@ export default function IndividualAttendance() {
     "Paternity Leave",
     "Earned Leave",
   ];
+  const approvedby = ["ED (HR)", "ED (MO)", "ED (SO)"];
 
   useEffect(() => {
     fetchEmployeesOptions();
@@ -90,6 +92,7 @@ export default function IndividualAttendance() {
     leave_type: "",
     reason: "",
     status: user.grade_id >= 9 ? "approved" : "pending",
+    approved_by: "",
     head: user.grade_id >= 9 ? user.erpid : "",
     start_date: moment().format("YYYY-MM-DD").toString(),
     end_date: moment().format("YYYY-MM-DD").toString(),
@@ -101,6 +104,7 @@ export default function IndividualAttendance() {
     reason: "",
     head: "",
     status: "",
+    approved_by: "",
     start_date: "",
     end_date: "",
   });
@@ -236,6 +240,7 @@ export default function IndividualAttendance() {
         !data.employee_id ||
         !data.leave_type ||
         !data.start_date ||
+        !data.approved_by ||
         !data.end_date ||
         !data.reason ||
         !data.head
@@ -245,6 +250,7 @@ export default function IndividualAttendance() {
           employee_id: !data.employee_id ? "Employee ID is required" : "",
           leave_type: !data.leave_type ? "Leave Type is required" : "",
           reason: !data.reason ? "Reason is required" : "",
+          approved_by: !data.approved_by ? "Approved By is required" : "",
           head: !data.head ? "Section Head is required" : "",
           start_date: !data.start_date ? "Start Date is required" : "",
           end_date: !data.end_date ? "End Date is required" : "",
@@ -255,10 +261,9 @@ export default function IndividualAttendance() {
       if (window.confirm("Are you sure you want to apply for this leave?")) {
         const response = await axios.post("/leaves/apply/", data);
         console.log("Leave application response:", response.data);
-        }
-        else {
-            return;
-        }
+      } else {
+        return;
+      }
 
       //   setData({
       //     erp_id: 0,
@@ -383,6 +388,22 @@ export default function IndividualAttendance() {
                   />
                 </div>
               )}
+            </div>
+            <div className="w-full my-3">
+              <Label>Approved By</Label>
+              <Select
+                options={approvedby.map((type) => ({
+                  label: type,
+                  value: type,
+                }))}
+                placeholder="Select an option"
+                onChange={(value) => {
+                  setData({ ...data, approved_by: value?.toString() || "" });
+                }}
+                className="dark:bg-dark-900"
+                error={!!fielderror.approved_by}
+                hint={fielderror.approved_by}
+              />
             </div>
             <div className="my-5">
               <TextArea

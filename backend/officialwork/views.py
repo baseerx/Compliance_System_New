@@ -69,6 +69,7 @@ def create_official_work_request(request):
         reason=data.get("reason", ""),
         status=data.get("status", ""),
         head_erpid=data.get("head_erpid", ""),
+        approved_by=data.get("approved_by", ""),
         start_date=data.get("start_date"),
         end_date=data.get("end_date"),
     )

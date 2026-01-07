@@ -156,6 +156,7 @@ def create_leave_request(request):
         leave_type=data.get("leave_type", ""),
         reason=data.get("reason", ""),
         status=data.get("status", ""),
+        approved_by=data.get("approved_by", ""),
         start_date=data.get("start_date"),
         end_date=data.get("end_date"),
     )

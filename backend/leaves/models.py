@@ -10,6 +10,7 @@ class LeaveModel(models.Model):
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
     reason = models.TextField(null=True, blank=True)
+    approved_by = models.TextField(null=True, blank=True)
     status = models.CharField(max_length=20, default='pending')  # e.g., Pending, Approved, Rejected
     created_at = models.DateTimeField(default=timezone.now)
 

@@ -23,8 +23,9 @@ type AttendanceRow = {
   start_date: string;
   end_date: string;
   reason: string;
-    status?: string;
+  status?: string;
   head_erpid?: any; // Assuming head_erpid is optional
+  approved_by?: string;
   created_at?: string;
 };
 
@@ -33,14 +34,9 @@ export default function OfficialWork() {
 
   const [options, setOptions] = useState<{ label: string; value: string }[]>(
     []
-    );
-      const user = JSON.parse(localStorage.getItem("user") || "{}");
-const leavetype = [
-    "Meetings",
-    "ACT Test",
-    "Official Tour",
-    "Foreign Tour",
-];
+  );
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const leavetype = ["Meetings", "ACT Test", "Official Tour", "Foreign Tour"];
 
   useEffect(() => {
     fetchEmployeesOptions();
@@ -52,9 +48,10 @@ const leavetype = [
     employee_id: 0,
     leave_type: "",
     reason: "",
-      status: user.grade_id >= 9 ? "approved" : "pending",
+    status: user.grade_id >= 9 ? "approved" : "pending",
     head_erpid: user.grade_id >= 9 ? user.erpid : "",
     start_date: moment().format("YYYY-MM-DD").toString(),
+    approved_by: "",
     end_date: moment().format("YYYY-MM-DD").toString(),
   });
   const [fielderror, setFieldError] = useState<AttendanceRow>({
@@ -65,34 +62,34 @@ const leavetype = [
     status: "",
     head_erpid: "",
     start_date: "",
+    approved_by: "",
     end_date: "",
   });
+  const approvedby = ["ED (HR)", "ED (MO)", "ED (SO)"];
+  const handleApproveLeave = async (id: string) => {
+    const [leaveId, action] = id.split("-");
+    try {
+      await axios.post("/officialwork/handle/", {
+        recordid: leaveId,
+        action: action,
+      });
+      toast.success(`Leave request ${action}d successfully`);
+      getEmployeesLeaves();
+    } catch (error) {
+      console.error("Error updating leave request:", error);
+      toast.error("Failed to update leave request");
+    }
+  };
 
-    const handleApproveLeave = async (id: string) => {
-        const [leaveId, action] = id.split("-");
-        try {
-            await axios.post("/officialwork/handle/", {
-                recordid: leaveId,
-                action: action,
-            });
-            toast.success(`Leave request ${action}d successfully`);
-            getEmployeesLeaves();
-        } catch (error) {
-            console.error("Error updating leave request:", error);
-            toast.error("Failed to update leave request");
-        }
-    };
-
-    const getEmployeesLeaves = async () => {
-    
-      try {
-        const loadingToastId = "officialwork-loading";
-         toast.loading(
-           <span className="text-sm font-semibold">
-             Loading/Fetching attendance data...
-           </span>,
-           { toastId: loadingToastId }
-         );
+  const getEmployeesLeaves = async () => {
+    try {
+      const loadingToastId = "officialwork-loading";
+      toast.loading(
+        <span className="text-sm font-semibold">
+          Loading/Fetching attendance data...
+        </span>,
+        { toastId: loadingToastId }
+      );
       const response = await axios.get(`/officialwork/get/${user.erpid}/`);
 
       const cleanedData: AttendanceRow[] = response.data.leaves.map(
@@ -113,9 +110,8 @@ const leavetype = [
           return picked;
         }
       );
-          setLeaves(cleanedData);
-                toast.dismiss(loadingToastId);
-
+      setLeaves(cleanedData);
+      toast.dismiss(loadingToastId);
     } catch (error) {
       console.error("Error fetching employee leaves:", error);
       toast.error("Failed to load employee leaves");
@@ -156,43 +152,48 @@ const leavetype = [
       cell: ({ getValue }) => {
         const value = getValue<string>();
         const color =
-          value?.toLowerCase() === "pending" || value?.toLowerCase() === "rejected"
+          value?.toLowerCase() === "pending" ||
+          value?.toLowerCase() === "rejected"
             ? "inline-flex items-center px-6 py-0.5 justify-center gap-1 rounded-full font-semibold text-theme-lg bg-warning-50 text-warning-600 dark:bg-warning-500/15 dark:text-warning-500"
             : value?.toLowerCase() === "approved"
             ? "inline-flex items-center px-6 py-0.5 justify-center gap-1 rounded-full font-semibold text-theme-lg bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500"
             : "";
         return <span className={color}>{value}</span>;
       },
-      },
+    },
     {
-        header: "Actions",
-        id: "actions-approve",
-        cell: ({ row }) => {
-            const user = JSON.parse(localStorage.getItem("user") || "{}");
-            return row.original.status?.toLowerCase() === "pending" && row.original.head_erpid === user.erpid ? (
-                <div className="flex gap-2">
-                    <Button
-                        size="xs"
-                        variant="primary"
-                        onClick={() => handleApproveLeave(`${row.original.id?.toString()}-approve`)}
-                    >
-                        Approve
-                    </Button>
-                    <Button
-                        size="xs"
-                        variant="outline"
-                        onClick={() => handleApproveLeave(`${row.original.id?.toString()}-reject`)}
-                    >
-                        Reject
-                    </Button>
-                </div>
-            ) : null;
-        },
-    }
+      header: "Actions",
+      id: "actions-approve",
+      cell: ({ row }) => {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        return row.original.status?.toLowerCase() === "pending" &&
+          row.original.head_erpid === user.erpid ? (
+          <div className="flex gap-2">
+            <Button
+              size="xs"
+              variant="primary"
+              onClick={() =>
+                handleApproveLeave(`${row.original.id?.toString()}-approve`)
+              }
+            >
+              Approve
+            </Button>
+            <Button
+              size="xs"
+              variant="outline"
+              onClick={() =>
+                handleApproveLeave(`${row.original.id?.toString()}-reject`)
+              }
+            >
+              Reject
+            </Button>
+          </div>
+        ) : null;
+      },
+    },
   ];
   const fetchEmployeesOptions = async () => {
-      try {
-
+    try {
       const response = await axios.get("/users/employees/");
       const employees = response.data.map((employee: any) => ({
         label: `${employee.name} (${employee.erp_id})`,
@@ -213,6 +214,7 @@ const leavetype = [
         !data.start_date ||
         !data.end_date ||
         !data.head_erpid ||
+        !data.approved_by ||
         !data.reason ||
         !data.status
       ) {
@@ -222,29 +224,29 @@ const leavetype = [
           leave_type: !data.leave_type ? "Leave Type is required" : "",
           reason: !data.reason ? "Reason is required" : "",
           status: !data.status ? "Status is required" : "",
+          approved_by: !data.approved_by ? "Approved By is required" : "",
           head_erpid: !data.head_erpid ? "Head ERP ID is required" : "",
           start_date: !data.start_date ? "Start Date is required" : "",
           end_date: !data.end_date ? "End Date is required" : "",
         });
         return;
       }
-        if (window.confirm("Are you sure you want to apply for this leave?")) {
-            const response = await axios.post("/officialwork/apply/", data);
-            console.log("Response:", response.data);
-        }
-        else {
-            return;
-        }
-    //   setData({
-    //     erp_id: null,
-    //     employee_id: null,
-    //     leave_type: "",
-    //     reason: "",
-    //     status: "",
-    //     head_erpid: "",
-    //     start_date: moment().format("YYYY-MM-DD").toString(),
-    //     end_date: moment().format("YYYY-MM-DD").toString(),
-    //   });
+      if (window.confirm("Are you sure you want to apply for this leave?")) {
+        const response = await axios.post("/officialwork/apply/", data);
+        console.log("Response:", response.data);
+      } else {
+        return;
+      }
+      //   setData({
+      //     erp_id: null,
+      //     employee_id: null,
+      //     leave_type: "",
+      //     reason: "",
+      //     status: "",
+      //     head_erpid: "",
+      //     start_date: moment().format("YYYY-MM-DD").toString(),
+      //     end_date: moment().format("YYYY-MM-DD").toString(),
+      //   });
       getEmployeesLeaves();
       toast.success("Leave application submitted successfully");
     } catch (error) {
@@ -269,7 +271,11 @@ const leavetype = [
               <SearchableDropdown
                 options={options}
                 placeholder="Select a employee"
-                label={user.grade_id < 9 ? `Employees` : `Employee  (Status for Grade 9 and above is auto approved)`}
+                label={
+                  user.grade_id < 9
+                    ? `Employees`
+                    : `Employee  (Status for Grade 9 and above is auto approved)`
+                }
                 id="employee-dropdown"
                 value={
                   options.find(
@@ -330,41 +336,57 @@ const leavetype = [
                 }}
               />
             </div>
-       
-              <div className="w-full">
-                          {user.grade_id<9 && <SearchableDropdown
-                              options={options}
-                              placeholder="select approving authority"
-                              label="Section Head"
-                              id="head-dropdown"
-                              value={
-                                  options.find(
-                                      (opt) => opt.value.split("-")[0] === `${data.head_erpid}`
-                                  )?.value || ""
-                              }
-                              onChange={(value) => {
-                                  const vals = value?.toString().split("-");
-                                  setData({
-                                      ...data,
-                                      head_erpid: parseInt(vals[0]),
-                                  });
-                              }}
-                              error={!!fielderror.head_erpid}
-                              hint={fielderror.head_erpid}
-                          />}
-              </div>
 
-              <div className="w-full">
-                          <TextArea
-                              placeholder="Enter reason for official work"
-                  value={data.reason}
+            <div className="w-full">
+              {user.grade_id < 9 && (
+                <SearchableDropdown
+                  options={options}
+                  placeholder="select approving authority"
+                  label="Section Head"
+                  id="head-dropdown"
+                  value={
+                    options.find(
+                      (opt) => opt.value.split("-")[0] === `${data.head_erpid}`
+                    )?.value || ""
+                  }
                   onChange={(value) => {
-                    setData({ ...data, reason: value });
+                    const vals = value?.toString().split("-");
+                    setData({
+                      ...data,
+                      head_erpid: parseInt(vals[0]),
+                    });
                   }}
-                  error={!!fielderror.reason}
-                  hint={fielderror.reason}
+                  error={!!fielderror.head_erpid}
+                  hint={fielderror.head_erpid}
                 />
-              
+              )}
+            </div>
+            <div className="w-full my-3">
+              <Label>Approved By</Label>
+              <Select
+                options={approvedby.map((type) => ({
+                  label: type,
+                  value: type,
+                }))}
+                placeholder="Select an option"
+                onChange={(value) => {
+                  setData({ ...data, approved_by: value?.toString() || "" });
+                }}
+                className="dark:bg-dark-900"
+                error={!!fielderror.approved_by}
+                hint={fielderror.approved_by}
+              />
+            </div>
+            <div className="w-full">
+              <TextArea
+                placeholder="Enter reason for official work"
+                value={data.reason}
+                onChange={(value) => {
+                  setData({ ...data, reason: value });
+                }}
+                error={!!fielderror.reason}
+                hint={fielderror.reason}
+              />
             </div>
           </div>
           <div className="w-full flex justify-center items-center">
