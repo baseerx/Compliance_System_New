@@ -6,6 +6,7 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 from sqlalchemy import text
 from db import SessionLocal
+from datetime import datetime
 # Create your views here.
 
 @require_GET
@@ -143,6 +144,135 @@ def get_leaves_count(request):
     sessions.close()
     return JsonResponse({"attendance": result}, status=200)
 
+
+@csrf_exempt
+@require_POST
+def individual_report(request):
+    data = json.loads(request.body.decode("utf-8"))
+
+    erpid = data.get("erp_id", 0)
+    section = data.get("section")
+    leave_type = data.get("leave_type")   # REQUIRED
+    start_date = data.get("start_date")
+    end_date = data.get("end_date")
+
+    # Convert dates to Python date objects
+    start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
+    end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
+
+    sessions = SessionLocal()
+
+    # ----------------------------------------------------
+    # FETCH EMPLOYEES
+    # ----------------------------------------------------
+    if erpid == 0:
+        query = text("""
+            SELECT
+                e.id AS employee_id,
+                e.erp_id,
+                e.name AS employee_name,
+                s.name AS section_name
+            FROM employees e
+            LEFT JOIN sections s ON e.section_id = s.id
+            WHERE e.flag = 1
+              AND e.section_id = :section
+        """)
+        employees = sessions.execute(query, {"section": section}).fetchall()
+    else:
+        query = text("""
+            SELECT
+                e.id AS employee_id,
+                e.erp_id,
+                e.name AS employee_name,
+                s.name AS section_name
+            FROM employees e
+            LEFT JOIN sections s ON e.section_id = s.id
+            WHERE e.flag = 1
+              AND e.section_id = :section
+              AND e.erp_id = :erp_id
+        """)
+        employees = sessions.execute(
+            query, {"section": section, "erp_id": erpid}
+        ).fetchall()
+
+    result = []
+
+    # ----------------------------------------------------
+    # LOOP EMPLOYEES
+    # ----------------------------------------------------
+    for emp in employees:
+        leave_count = 0
+
+        # ------------------------------------------------
+        # FILTERED LEAVES (by type + date range)
+        # ------------------------------------------------
+        leaves_query = text("""
+            SELECT start_date, end_date
+            FROM leaves
+            WHERE erp_id = :erp_id
+              AND status = 'approved'
+              AND leave_type = :leave_type
+              AND start_date <= :end_date
+              AND end_date >= :start_date
+        """)
+
+        leaves = sessions.execute(
+            leaves_query,
+            {
+                "erp_id": emp.erp_id,
+                "leave_type": leave_type,
+                "start_date": start_date,
+                "end_date": end_date,
+            },
+        ).fetchall()
+
+        for leave in leaves:
+            actual_start = max(leave.start_date, start_date)
+            actual_end = min(leave.end_date, end_date)
+            leave_count += (actual_end - actual_start).days + 1
+
+        # ------------------------------------------------
+        # OFFICIAL WORK LEAVES (OPTIONAL – remove if not needed)
+        # ------------------------------------------------
+        official_query = text("""
+            SELECT start_date, end_date
+            FROM official_work_leaves
+            WHERE erp_id = :erp_id
+              AND status = 'approved'
+              AND start_date <= :end_date
+              AND end_date >= :start_date
+        """)
+
+        official_leaves = sessions.execute(
+            official_query,
+            {
+                "erp_id": emp.erp_id,
+                "start_date": start_date,
+                "end_date": end_date,
+            },
+        ).fetchall()
+
+        for leave in official_leaves:
+            actual_start = max(leave.start_date, start_date)
+            actual_end = min(leave.end_date, end_date)
+            leave_count += (actual_end - actual_start).days + 1
+
+        # ------------------------------------------------
+        # RESPONSE
+        # ------------------------------------------------
+        result.append({
+            "employee_id": emp.employee_id,
+            "erp_id": emp.erp_id,
+            "employee_name": emp.employee_name,
+            "section": emp.section_name,
+            "leave_type": leave_type,
+            "leave_count": leave_count,
+            "start_date": start_date.strftime("%d-%m-%Y"),
+            "end_date": end_date.strftime("%d-%m-%Y"),
+        })
+
+    sessions.close()
+    return JsonResponse({"attendance": result}, status=200)
 
 @csrf_exempt
 @require_POST

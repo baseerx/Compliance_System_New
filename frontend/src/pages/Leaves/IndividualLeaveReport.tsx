@@ -11,18 +11,43 @@ import SearchableDropdown from "../../components/form/input/SearchableDropDown";
 import Button from "../../components/ui/button/Button";
 import Label from "../../components/form/Label";
 import Select from "../../components/form/Select";
+import moment from "moment";
+import DatePicker from "../../components/form/date-picker";
 
 type AttendanceRow = {
-  id?: number;
-  employee_id: any;
-  employee_name?: string;
-  section: string;
-  erp_id: any;
-  leave_count?: number;
+    id?: number;
+    employee_id: any;
+    employee_name?: string;
+    section: string;
+    erp_id: any;
+    leave_type?: string;
+    leave_count?: number;
+    start_date?: string;
+    end_date?: string;
 };
 
-export default function LeaveHistory() {
-  const [leavehistory, setLeaveHistory] = useState<AttendanceRow[]>([]);
+export default function IndividualLeaveReport() {
+  const [IndividualLeaveReport, setIndividualLeaveReport] = useState<
+    AttendanceRow[]
+  >([]);
+  const leavetype = [
+    "Sick Leave",
+    "Casual Leave",
+    "Annual Leave",
+    "Maternity Leave",
+    "External Meeting",
+    "Official Work",
+    "Umrah Leave",
+    "Hajj Leave",
+    "Shift Leave",
+    "Rest & Recreational Leave",
+    "Compensatory Leave",
+    "Short Leave",
+    "Study Leave",
+    "Marriage Leave",
+    "Paternity Leave",
+    "Earned Leave",
+  ];
   const [employeeOptions, setEmployeeOptions] = useState<
     { label: string; value: string }[]
   >([]);
@@ -30,33 +55,31 @@ export default function LeaveHistory() {
     { label: string; value: string }[]
   >([]);
 
-
   useEffect(() => {
     fetchEmployeesOptions();
     getSectionsData();
   }, []);
 
-    const handleSelectChange = (value: string) => {
+  const handleSelectChange = (value: string) => {
     setData({
       ...data,
       section: value,
     });
-  }
-    const handleSubmit = async () => {
-        if (!data.section){
-
-          toast.error("Please select a section");
-          return;
-        }
-        try {
-            const response = await axios.post("/leaves/history/", data);
-            setLeaveHistory(response.data.attendance);
-            toast.success("Leave applied successfully");
-        } catch (error) {
-          console.error("Error applying leave:", error);
-          toast.error("Failed to apply leave");
-        }
-      };
+  };
+  const handleSubmit = async () => {
+    if (!data.section || !data.leave_type || !data.erp_id) {
+      toast.error("Please select a section, leave type, and employee");
+      return;
+    }
+    try {
+      const response = await axios.post("/leaves/individual-report/", data);
+      setIndividualLeaveReport(response.data.attendance);
+      toast.success("Leave applied successfully");
+    } catch (error) {
+      console.error("Error applying leave:", error);
+      toast.error("Failed to apply leave");
+    }
+  };
 
   const getSectionsData = async () => {
     try {
@@ -73,12 +96,19 @@ export default function LeaveHistory() {
     }
   };
 
-  const [data, setData] = useState<{ erp_id: number; section: string }>({
+  const [data, setData] = useState<{
+    erp_id: number;
+    section: string;
+    leave_type: string;
+    start_date: string;
+    end_date: string;
+  }>({
     erp_id: 0,
     section: "",
+    leave_type: "",
+    start_date: moment().format("YYYY-MM-DD").toString(),
+    end_date: moment().format("YYYY-MM-DD").toString(),
   });
-
-  
 
 const columns: ColumnDef<AttendanceRow>[] = [
     {
@@ -94,19 +124,28 @@ const columns: ColumnDef<AttendanceRow>[] = [
         accessorKey: "section",
     },
     {
+        header:"Start Date",
+        accessorKey:"start_date",
+    },
+    {
+        header:"End Date",
+        accessorKey:"end_date",
+    },
+    {
+        header: "Leave Type",
+        accessorKey: "leave_type",
+    },
+    {
         header: "Leave Count",
         accessorKey: "leave_count",
         cell: ({ getValue }) => {
             const value = getValue<number>();
             const color =
                 "inline-flex items-center px-6 py-0.5 justify-center gap-1 rounded-full font-semibold text-theme-lg bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500";
-            return (
-                <span className={color}>
-                    {value ?? 0}
-                </span>
-            );
+            return <span className={color}>{value ?? 0}</span>;
         },
     },
+    
 ];
 
   const fetchEmployeesOptions = async () => {
@@ -123,16 +162,15 @@ const columns: ColumnDef<AttendanceRow>[] = [
     }
   };
 
-
   return (
     <>
       <PageMeta
-        title="ISMO - Leave History"
-        description="ISMO Admin Dashboard - Leave History"
+        title="ISMO - Attendance History"
+        description="ISMO Admin Dashboard - Attendance History"
       />
-      <PageBreadcrumb pageTitle="Leave History" />
+      <PageBreadcrumb pageTitle="Attendance History" />
       <div className="space-y-6">
-        <ComponentCard title={`General Leave History`}>
+        <ComponentCard title={`Individual Leave Report`}>
           <ToastContainer position="bottom-right" />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 mb-4 gap-1 justify-center items-center">
@@ -168,6 +206,52 @@ const columns: ColumnDef<AttendanceRow>[] = [
                 className="dark:bg-dark-900"
               />
             </div>
+
+            {/* Leave Type */}
+            <div className="w-full">
+              <Label>Leave Type</Label>
+              <Select
+                options={leavetype.map((type) => ({
+                  label: type,
+                  value: type,
+                }))}
+                placeholder="Select an option"
+                onChange={(value) =>
+                  setData({
+                    ...data,
+                    leave_type: value,
+                  })
+                }
+                className="dark:bg-dark-900"
+              />
+                      </div>
+                      
+                    <div className="w-full my-3">
+                                <DatePicker
+                                  id="from-date-picker"
+                                  defaultDate={data.start_date.toString()}
+                                  label="from date"
+                                  placeholder="Select a date"
+                                  onChange={(dates, currentDateString) => {
+                                    console.log(dates);
+                                    // Handle your logic
+                                    setData({ ...data, start_date: currentDateString });
+                                  }}
+                                />
+                              </div>
+                              <div className="w-full">
+                                <DatePicker
+                                  id="to-date-picker"
+                                  defaultDate={data.end_date.toString()}
+                                  label="to date"
+                                  placeholder="Select a date"
+                                  onChange={(dates, currentDateString) => {
+                                    console.log(dates);
+                                    // Handle your logic
+                                    setData({ ...data, end_date: currentDateString });
+                                  }}
+                                />
+                              </div>    
           </div>
 
           <div className="w-full flex justify-center items-center">
@@ -181,7 +265,10 @@ const columns: ColumnDef<AttendanceRow>[] = [
             </Button>
           </div>
 
-          <EnhancedDataTable<AttendanceRow> data={leavehistory} columns={columns} />
+          <EnhancedDataTable<AttendanceRow>
+            data={IndividualLeaveReport}
+            columns={columns}
+          />
         </ComponentCard>
       </div>
     </>

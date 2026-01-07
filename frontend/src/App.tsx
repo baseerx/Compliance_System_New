@@ -44,6 +44,7 @@ import AddEmployee from "./pages/UserManagement/AddEmployee";
 import RccUpdateAttendance from "./pages/Attendance/RccUpdateAttendance";
 import NccUpdateAttendance from "./pages/Attendance/NccUpdateAttendance";
 import LeaveHistory from "./pages/Leaves/LeaveHistory";
+import IndividualLeaveReport from "./pages/Leaves/IndividualLeaveReport";
 export default function App() {
   return (
     <>
@@ -60,6 +61,7 @@ export default function App() {
               <Route path="/profile" element={<UserProfiles />} />
               <Route path="/calendar" element={<Calendar />} />
               <Route path="/blank" element={<Blank />} />
+              <Route path="/individual-leave-report" element={<IndividualLeaveReport />} />
 
               {/* Forms */}
               <Route path="/form-elements" element={<FormElements />} />
