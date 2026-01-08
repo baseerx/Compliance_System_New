@@ -51,16 +51,13 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django_extensions',  # If you're using Django Extensions
     'corsheaders',  # If you're using Django Extensions
-    'attendance',  # Your attendance app
+ 
     'users',  # Your attendance app
     'sections',  # Your attendance app
-    'leaves',  # Your attendance app
-    'holidays',  # Your attendance app
     'mainmenu',  # Your main menu app
     'submenu',  # Your submenu app
     'assignrights',
     'addtouser',
-    'officialwork',
     'rest_framework',  # If you're using Django REST Framework
 ]
 
@@ -101,7 +98,7 @@ WSGI_APPLICATION = 'hris.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'mssql',
-        'NAME': 'Attendance_System',  # Replace with your actual database name
+        'NAME': 'Compliance_System',  # Replace with your actual database name
         'USER': 'sa',
         'PASSWORD': 'Sa@157',
         'HOST': '192.168.157.51',

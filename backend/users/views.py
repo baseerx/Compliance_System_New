@@ -19,7 +19,7 @@ from datetime import date
 # Import CustomUser from another app named 'addtousers'
 from addtouser.models import CustomUser
 # Import LeaveModel from another app named 'attendance'
-from attendance.models import Attendance
+
 from sections.models import Sections
 from sqlalchemy import text
 from db import SessionLocal
