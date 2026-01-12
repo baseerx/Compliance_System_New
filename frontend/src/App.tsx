@@ -27,6 +27,7 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 import Home from "./pages/Dashboard/Home";
 import ChangePassword from "./pages/UserManagement/ChangePassword";
 import AddEmployee from "./pages/UserManagement/AddEmployee";
+import LetterForm from "./pages/Forms/LetterForm";
 
 export default function App() {
   return (
@@ -47,7 +48,8 @@ export default function App() {
       
 
               {/* Forms */}
-              <Route path="/form-elements" element={<FormElements />} />
+                          <Route path="/form-elements" element={<FormElements />} />
+                          <Route path="/addletter" element={<LetterForm />} />
 
               {/* Tables */}
               <Route path="/basic-tables" element={<BasicTables />} />
