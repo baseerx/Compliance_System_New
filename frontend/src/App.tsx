@@ -13,39 +13,21 @@ import LineChart from "./pages/Charts/LineChart";
 import BarChart from "./pages/Charts/BarChart";
 import Calendar from "./pages/Calendar";
 import BasicTables from "./pages/Tables/BasicTables";
-import DataTableOne from "./pages/Tables/TodaysAttendance";
-import AttendanceHistory from "./pages/Tables/AttendanceHistory";
+
 import FormElements from "./pages/Forms/FormElements";
 import Blank from "./pages/Blank";
 import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 
-import SectionAttendanceReport from "./pages/Tables/SectionAttendanceReport";
-import ApplyLeave from "./pages/Leaves/ApplyLeave";
-import PublicHoliday from "./pages/Leaves/PublicHolidays";
-// import TodaysAttendance from "./pages/Tables/TodaysAttendance";
-import IndividualAttendance from "./pages/Tables/IndividualAttendance";
 import CreateUser from "./pages/UserManagement/CreateUser";
 import AssignRights from "./pages/UserManagement/AssignRights";
 import MainMenu from "./pages/Menus/MainMenu";
 import SubMenu from "./pages/Menus/SubMenu";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import Home from "./pages/Dashboard/Home";
-import AttendanceOverview from "./pages/Attendance/AttendanceOverview";
-import PresentAbsent from "./pages/Attendance/PresentAbsent";
-import OfficialWork from "./pages/Leaves/OfficialWork";
 import ChangePassword from "./pages/UserManagement/ChangePassword";
-import DetailedReport from "./pages/Attendance/DetailedReport";
-import TeamLevel from "./pages/Attendance/TeamLevel";
-import ShiftAttendance from "./pages/Attendance/ShiftAttendance";
-import ShiftHistory from "./pages/Attendance/ShiftHistory";
-import RccShift from "./pages/Attendance/RccShift";
 import AddEmployee from "./pages/UserManagement/AddEmployee";
-import RccUpdateAttendance from "./pages/Attendance/RccUpdateAttendance";
-import NccUpdateAttendance from "./pages/Attendance/NccUpdateAttendance";
-import LeaveHistory from "./pages/Leaves/LeaveHistory";
-import IndividualLeaveReport from "./pages/Leaves/IndividualLeaveReport";
-import SectionLeaveReport from "./pages/Leaves/SectionLeave";
+
 export default function App() {
   return (
     <>
@@ -62,75 +44,15 @@ export default function App() {
               <Route path="/profile" element={<UserProfiles />} />
               <Route path="/calendar" element={<Calendar />} />
               <Route path="/blank" element={<Blank />} />
-              <Route path="/individual-leave-report" element={<IndividualLeaveReport />} />
+      
 
               {/* Forms */}
               <Route path="/form-elements" element={<FormElements />} />
 
               {/* Tables */}
               <Route path="/basic-tables" element={<BasicTables />} />
-              <Route path="/attendance/today" element={<DataTableOne />} />
-              <Route
-                path="/attendance/history"
-                element={<AttendanceHistory />}
-              />
-              <Route
-                path="/attendance/detailed-report"
-                element={<DetailedReport />}
-              />
-              <Route
-                path="/attendance/shifts"
-                element={<ShiftAttendance />}
-              />
-              <Route
-                path="/attendance/shift-history"
-                element={<ShiftHistory />}
-              />
-              <Route
-                path="/attendance/rcc-shift"
-                element={<RccShift />}
-              />
-              <Route
-                path="/attendance/status"
-                element={<PresentAbsent />}
-              />
-              <Route
-                path="/attendance/team-level"
-                element={<TeamLevel />}
-              />
-              <Route
-                path="/leaves/official-work"
-                element={<OfficialWork />}
-              />
-              <Route
-                path="/leaves/section-leave-report"
-                element={<SectionLeaveReport />}
-              />
-              <Route
-                path="/leaves/leave-history"
-                element={<LeaveHistory />}
-              />
-              <Route
-                path="/attendance/individual"
-                element={<IndividualAttendance />}
-              />
-              <Route
-                path="/attendance/rcc-update"
-                element={<RccUpdateAttendance />}
-              />
-              <Route
-                path="/attendance/ncc-update"
-                element={<NccUpdateAttendance />}
-              />
-       
-              <Route
-                path="/attendance/section"
-                element={<SectionAttendanceReport />}
-              />
-              <Route
-                path="/attendance/overview"
-                element={<AttendanceOverview />}
-              />
+             
+
 
               {/* User managment */}
               <Route path="/users/create" element={<CreateUser />} />
@@ -140,13 +62,6 @@ export default function App() {
               {/* Menu Management */}
               <Route path="/create-menu" element={<MainMenu />} />
               <Route path="/sub-menu" element={<SubMenu />} />
-
-              {/* Leaves */}
-              <Route path="/leaves/apply" element={<ApplyLeave />} />
-              <Route
-                path="/leaves/public-holidays"
-                element={<PublicHoliday />}
-              />
 
               {/* Plugins */}
               {/* Ui Elements */}
