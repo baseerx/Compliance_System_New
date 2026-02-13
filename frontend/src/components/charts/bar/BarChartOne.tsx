@@ -1,97 +1,35 @@
 import Chart from "react-apexcharts";
-import { ApexOptions } from "apexcharts";
 
-export default function BarChartOne() {
-  const options: ApexOptions = {
-    colors: ["#465fff"],
+export default function BarChartOne({ monthlyData }: { monthlyData: number[] }) {
+  const options: ApexCharts.ApexOptions = {
     chart: {
-      fontFamily: "Outfit, sans-serif",
       type: "bar",
-      height: 180,
-      toolbar: {
-        show: false,
-      },
+      height: 350,
+      toolbar: { show: false },
+      sparkline: { enabled: false },
     },
     plotOptions: {
       bar: {
+        borderRadius: 8,
         horizontal: false,
-        columnWidth: "39%",
-        borderRadius: 5,
-        borderRadiusApplication: "end",
+        columnWidth: "50%",
+        distributed: true,
       },
     },
-    dataLabels: {
-      enabled: false,
-    },
-    stroke: {
-      show: true,
-      width: 4,
-      colors: ["transparent"],
-    },
+    dataLabels: { enabled: true },
     xaxis: {
-      categories: [
-        "Jan",
-        "Feb",
-        "Mar",
-        "Apr",
-        "May",
-        "Jun",
-        "Jul",
-        "Aug",
-        "Sep",
-        "Oct",
-        "Nov",
-        "Dec",
-      ],
-      axisBorder: {
-        show: false,
-      },
-      axisTicks: {
-        show: false,
-      },
+      categories: ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
+      labels: { rotate: -45 },
     },
-    legend: {
-      show: true,
-      position: "top",
-      horizontalAlign: "left",
-      fontFamily: "Outfit",
-    },
-    yaxis: {
-      title: {
-        text: undefined,
-      },
-    },
-    grid: {
-      yaxis: {
-        lines: {
-          show: true,
-        },
-      },
-    },
-    fill: {
-      opacity: 1,
-    },
-
-    tooltip: {
-      x: {
-        show: false,
-      },
-      y: {
-        formatter: (val: number) => `${val}`,
-      },
-    },
+    colors: [
+      "#4F46E5", "#6366F1", "#818CF8", "#A5B4FC", "#C7D2FE", 
+      "#E0E7FF", "#4338CA", "#312E81", "#3730A3", "#4338CA", "#4F46E5", "#6366F1"
+    ],
+    tooltip: { y: { formatter: (val) => `${val} letters` } },
+    grid: { borderColor: "#E5E7EB" },
   };
-  const series = [
-    {
-      name: "Sales",
-      data: [168, 385, 201, 298, 187, 195, 291, 110, 215, 390, 280, 112],
-    },
-  ];
-  return (
-    <div className="max-w-full overflow-x-auto custom-scrollbar">
-      <div id="chartOne" className="min-w-[1000px]">
-        <Chart options={options} series={series} type="bar" height={180} />
-      </div>
-    </div>
-  );
+
+  const series = [{ name: "Letters Created", data: monthlyData }];
+
+  return <Chart options={options} series={series} type="bar" height={350} />;
 }

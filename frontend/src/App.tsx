@@ -27,7 +27,12 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 import Home from "./pages/Dashboard/Home";
 import ChangePassword from "./pages/UserManagement/ChangePassword";
 import AddEmployee from "./pages/UserManagement/AddEmployee";
-import LetterForm from "./pages/Forms/LetterForm";
+import TaskForm from "./pages/Forms/TaskForm";
+import TaskView from "./pages/Forms/TaskView";
+import DocumentLogs from "./pages/Forms/DocumentLogs";
+import HandleStatus from "./pages/Forms/HandleStatus";
+import FilteredDocs from "./pages/Dashboard/FilteredDocs";
+
 
 export default function App() {
   return (
@@ -39,6 +44,8 @@ export default function App() {
           <Route element={<ProtectedRoute />}>
             <Route element={<AppLayout />}>
               <Route path="/dashboard" index element={<Home />} />
+              <Route path="/letters/filtered/:filterType" element={<FilteredDocs />} />
+
 
               {/* Others Page */}
               <Route path="/change-password" element={<ChangePassword />} />
@@ -48,8 +55,13 @@ export default function App() {
       
 
               {/* Forms */}
-                          <Route path="/form-elements" element={<FormElements />} />
-                          <Route path="/addletter" element={<LetterForm />} />
+              <Route path="/form-elements" element={<FormElements />} />
+              <Route path="/task_form" element={<TaskForm/>} />
+              <Route path="/task_view" element={<TaskView/>} />
+              <Route path="/history/:id" element={<DocumentLogs />} />
+              <Route path="/handle_status" element={<HandleStatus/>} />
+
+                          
 
               {/* Tables */}
               <Route path="/basic-tables" element={<BasicTables />} />

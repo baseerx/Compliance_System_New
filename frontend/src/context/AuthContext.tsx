@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState,useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -7,12 +7,13 @@ type AuthContextType = {
     userData: any;
     token: string | null;
     login: (userData: AuthContextType) => void;
-    logout:() => void;
+    logout: () => void;
 };
 
 export const AuthProvider: React.FC<React.PropsWithChildren<{}>> = ({ children }) => {
     const [user, setUser] = useState<AuthContextType | null>(null);
     const [token, setToken] = useState<string | null>(null);
+    
     useEffect(() => {
         const storedUser = localStorage.getItem("user");
         const storedToken = localStorage.getItem("token");
@@ -23,7 +24,6 @@ export const AuthProvider: React.FC<React.PropsWithChildren<{}>> = ({ children }
         if (storedToken) {
             setToken(storedToken);
         }
-     
     }, []); 
     
     const login = (userData: AuthContextType) => {
@@ -32,20 +32,18 @@ export const AuthProvider: React.FC<React.PropsWithChildren<{}>> = ({ children }
         
         localStorage.setItem("user", JSON.stringify(userData.user));
         localStorage.setItem("token", userData.user.token || "");
-        // Implement login logic here
     };
+    
     const logout = () => {
         setUser(null);
         setToken(null);
         
         localStorage.removeItem("user");
         localStorage.removeItem("token");
-        // Implement logout logic here
     };
-    
 
     return (
-        <AuthContext.Provider value={{ user, userData:user, token, login, logout }}>
+        <AuthContext.Provider value={{ user, userData: user, token, login, logout }}>
             {children}
         </AuthContext.Provider>
     );
