@@ -24,14 +24,44 @@ SECRET_KEY = 'django-insecure-4&quhz))qhg9a(t#^fmycf=bf=dn#5n$k1k2d61)u+d&=ro8e#
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-CORS_ALLOW_ALL_ORIGINS = True
 USE_TZ = False
+
+# REST Framework Settings - No authentication required
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': [],  # Empty = No authentication
+}
+
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
 
 # CORS settings
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",  # Vite (React dev server)
     "http://127.0.0.1:5173",
-     # production frontend
+    "http://127.0.0.1:9002",
 ]
 
 ALLOWED_HOSTS = [
@@ -58,6 +88,8 @@ INSTALLED_APPS = [
     'submenu',  # Your submenu app
     'assignrights',
     'addtouser',
+    'letters',
+    'department',
     'rest_framework',  # If you're using Django REST Framework
 ]
 
@@ -100,9 +132,8 @@ DATABASES = {
         'ENGINE': 'mssql',
         'NAME': 'Compliance_System',  # Replace with your actual database name
         'USER': 'sa',
-        'PASSWORD': 'Sa@157',
-        'HOST': '192.168.157.51',
-        'PORT': '9090',
+        'PASSWORD': 'As@100',
+        'HOST': 'DESKTOP-1IIMFKC\SQLEXPRESS',
         'OPTIONS': {
             'driver': 'ODBC Driver 17 for SQL Server',  # Ensure you have the correct ODBC driver installed
             'charset': 'utf8mb4',  # Optional, adjust as needed

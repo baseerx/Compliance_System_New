@@ -1,6 +1,5 @@
 from django.db import models
 
-
 class Employees(models.Model):
     # assuming it's an auto-increment primary key
 

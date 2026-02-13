@@ -555,3 +555,5 @@ class EmployeesView:
             print("Unexpected error:", str(e))
             traceback.print_exc()   # <-- shows full traceback in console
             return JsonResponse({"success": False, "error": str(e)}, status=500)
+        
+
