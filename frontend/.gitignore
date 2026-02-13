@@ -34,3 +34,11 @@ dist-ssr/
 *.njsproj
 *.sln
 *.sw?
+
+
+
+__pycache__/
+*.pyc
+celerybeat-schedule*
+venv/
+backend/venv/
