@@ -4,23 +4,20 @@ from sqlalchemy.orm import sessionmaker
 from urllib.parse import quote_plus
 
 username = "sa"
-password = quote_plus("Sa@157")
-host = "192.168.157.51"
-port = "9090"
+password = quote_plus("As@100")   # encode special chars
+host = r"DESKTOP-1IIMFKC\SQLEXPRESS"
 database = "Compliance_System"
 driver = "ODBC+Driver+17+for+SQL+Server"
 
-# Build SQLAlchemy DSN
 DATABASE_URL = (
-    f"mssql+pyodbc://{username}:{password}@{host}:{port}/{database}"
-    f"?driver={driver}&TrustServerCertificate=yes"
+    f"mssql+pyodbc://{username}:{password}@{host}/{database}"
+    f"?driver={driver}&TrustServerCurertificate=yes"
 )
 
-# Create engine with recommended SQL Server configs
 engine = create_engine(
     DATABASE_URL,
-    pool_pre_ping=True,        # <-- KEY FIX
-    pool_recycle=1800,         # recycle idle connections every 30 minutes
+    pool_pre_ping=True,
+    pool_recycle=1800,
     connect_args={
         "timeout": 30,
         "ConnectionTimeout": 30,
