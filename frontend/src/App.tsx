@@ -32,7 +32,7 @@ import TaskView from "./pages/Forms/TaskView";
 import DocumentLogs from "./pages/Forms/DocumentLogs";
 import HandleStatus from "./pages/Forms/HandleStatus";
 import FilteredDocs from "./pages/Dashboard/FilteredDocs";
-
+import ApprovalTasks from "./pages/Forms/ApprovalTasks";
 
 export default function App() {
   return (
@@ -60,7 +60,7 @@ export default function App() {
               <Route path="/task_view" element={<TaskView/>} />
               <Route path="/history/:id" element={<DocumentLogs />} />
               <Route path="/handle_status" element={<HandleStatus/>} />
-
+              <Route path="/approval_tasks" element={<ApprovalTasks/>} />
                           
 
               {/* Tables */}
