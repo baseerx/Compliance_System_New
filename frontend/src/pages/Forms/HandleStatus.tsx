@@ -85,7 +85,7 @@ const HandleStatus: React.FC = () => {
   useEffect(() => {
     if (!search) { setFiltered(letters); return; }
     setFiltered(letters.filter(l =>
-      `${l.ref_no} ${l.subject} ${l.sender} ${l.receiver} ${l.category}`
+      ` ${l.subject} ${l.sender} ${l.receiver} ${l.category}`
         .toLowerCase().includes(search.toLowerCase())
     ));
   }, [search, letters]);
@@ -134,7 +134,7 @@ const HandleStatus: React.FC = () => {
 
      
         <Paper elevation={0} sx={{ p: 2, mb: 3, borderRadius: 3, border: "1px solid #e0e0e0", backgroundColor: "#fff" }}>
-          <TextField fullWidth placeholder="Search by Ref No, Subject, Sender, Receiver, or Category…"
+          <TextField fullWidth placeholder="Search by  Subject, Sender, Receiver, or Category…"
             value={search} onChange={e => setSearch(e.target.value)}
             InputProps={{
               startAdornment: <InputAdornment position="start"><SearchIcon sx={{ color: "#1a237e" }} /></InputAdornment>,
@@ -154,7 +154,7 @@ const HandleStatus: React.FC = () => {
               <TableHead>
                 <TableRow sx={{ backgroundColor: "#1a237e" }}>
                   {[
-                    "Ref No", "Cycle", "Subject", "Sender", "Receiver",
+                     "Cycle", "Subject", "Sender", "Receiver",
                     "Category", "Priority", "Due Date", "Next Due", "Assigned To", "Status",
                   ].map(h => (
                     <TableCell key={h} sx={{ color: "white", fontWeight: "bold", fontSize: "0.875rem", whiteSpace: "nowrap" }}>
@@ -194,12 +194,6 @@ const HandleStatus: React.FC = () => {
                           "&:hover": { backgroundColor: "#f0f4ff !important" },
                           transition: "background-color 0.2s",
                         }}>
-
-                        <TableCell>
-                          <Typography variant="body2" sx={{ fontWeight: 600, color: "#1a237e" }}>
-                            {letter.ref_no}
-                          </Typography>
-                        </TableCell>
 
                         <TableCell>
                           <Chip label={letter.cycle_no ?? 1} size="small"

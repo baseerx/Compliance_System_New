@@ -5,7 +5,7 @@ from urllib.parse import quote_plus
 
 username = "sa"
 password = quote_plus("As@100")   # encode special chars
-host = r"DESKTOP-1IIMFKC\SQLEXPRESS"
+host = r"DESKTOP-MD8V8H2\SQLEXPRESS"
 database = "Compliance_System"
 driver = "ODBC+Driver+17+for+SQL+Server"
 

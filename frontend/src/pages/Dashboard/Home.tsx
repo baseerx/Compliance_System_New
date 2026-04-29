@@ -4,13 +4,14 @@ import Insights from "../../components/common/Insights";
 import api from "../../api/axios";
 import PieChartOne from "../../components/charts/pie/PieChartOne";
 import BarChartOne from "../../components/charts/bar/BarChartOne";
+import SplitBarChart from "../../components/charts/bar/SplitBarChart";
+
 
 interface Letter {
   id: number;
   ref_no: string;
   subject: string;
-  sender_name?: string;
-  receiver_name?: string;
+  department_name?: string;
   category: string;
   status: string;
   priority: string;
@@ -29,27 +30,44 @@ export default function LetterDashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError]           = useState<string | null>(null);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [isDirector, setIsDirector] = useState(false);
 
   const loadLetters = useCallback(async (isRefresh = false) => {
     try {
       if (isRefresh) setRefreshing(true);
       else setLoading(true);
 
-      const userStr = localStorage.getItem("user");
-      let userIsSuperAdmin = false;
 
-      if (userStr) {
-        const user = JSON.parse(userStr);
-        userIsSuperAdmin =
-          user.superadmin === 1 ||
-          user.superadmin === true ||
-          user.is_superuser === true;
-        setIsSuperAdmin(userIsSuperAdmin);
-      }
 
-      const endpoint = userIsSuperAdmin ? "/letters/all/" : "/letters/";
-      const res = await api.get(endpoint);
+  const userStr = localStorage.getItem("user");
+
+let userIsSuperAdmin = false;
+let userIsDirector = false;
+
+if (userStr) {
+  const user = JSON.parse(userStr);
+
+  const isSuperuser =
+    user.superadmin === 1 ||
+    user.superadmin === true ||
+    user.is_superuser === true;
+
+  const isStaff =
+    user.is_staff === true ||
+    user.is_staff === 1;
+
+  userIsSuperAdmin = isSuperuser && !isStaff;
+  userIsDirector = isSuperuser && isStaff;
+
+  setIsSuperAdmin(userIsSuperAdmin);
+  setIsDirector(userIsDirector);
+}
+
+  const endpoint = "/letters/";
+  const res = await api.get(endpoint);
       setLetters(res.data);
+      console.log("Sample letter:", res.data[0]);
+      console.log("Dept names:", [...new Set(res.data.map((l: any) => l.department_name))]);
       setError(null);
     } catch (err: any) {
       let errorMsg = "Failed to fetch tasks";
@@ -69,7 +87,8 @@ export default function LetterDashboard() {
       setRefreshing(false);
     }
   }, []);
-
+  
+  
   useEffect(() => { loadLetters(); }, [loadLetters]);
 
   if (loading) {
@@ -161,11 +180,17 @@ export default function LetterDashboard() {
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-800 mb-1">
-              {isSuperAdmin ? "Admin Dashboard" : "My Tasks"}
+              {isSuperAdmin
+                ? "Admin Dashboard"
+                : isDirector
+                ? "Director Dashboard"
+                : "My Tasks"}
             </h1>
             <p className="text-gray-600">
               {isSuperAdmin
                 ? `Overview of all ${letters.length} tasks in the system`
+                : isDirector
+                ? `Tasks under your supervision: ${letters.length}`
                 : `You have ${letters.length} task${letters.length !== 1 ? "s" : ""} assigned to you`}
             </p>
           </div>
@@ -200,7 +225,7 @@ export default function LetterDashboard() {
           <div className="bg-white p-5 rounded-xl shadow-md hover:shadow-lg transition-shadow border border-gray-100">
             <div className="flex items-center mb-4">
               <div className="w-2 h-8 bg-indigo-600 rounded-full mr-3" />
-              <h3 className="text-lg font-semibold text-gray-800">Task Status Distribution</h3>
+              <h3 className="text-lg font-semibold text-gray-800">Overall Status </h3>
             </div>
             {hasChartData ? (
               <PieChartOne
@@ -226,6 +251,18 @@ export default function LetterDashboard() {
             )}
           </div>
         </div>
+        {isSuperAdmin && (
+          <div className="bg-white p-5 rounded-xl shadow-md hover:shadow-lg transition-shadow border border-gray-100 mb-6">
+            <div className="flex items-center mb-4">
+              <div className="w-2 h-8 bg-indigo-600 rounded-full mr-3" />
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800">Department Task Breakdown</h3>
+                <p className="text-sm text-gray-500 mt-0.5">Click any bar to view that department's full task list</p>
+              </div>
+            </div>
+            <SplitBarChart letters={letters} />
+          </div>
+        )}
 
         <div className="bg-white p-5 rounded-xl shadow-md border border-gray-100">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Quick Statistics</h3>

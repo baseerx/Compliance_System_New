@@ -11,6 +11,7 @@ urlpatterns = [
     path("<int:pk>/delete/",   views.delete_letter,        name="delete_letter"),
     path("all/", views.get_all_letters, name="get_all_letters"),
     path("<int:pk>/download/", views.download_letter_file, name="download_letter_file"),
+    path("<int:pk>/comments/", views.letter_comments),
 
     path("<int:pk>/approve/",  views.approve_letter,       name="approve_letter"),
     path("<int:pk>/reject/",   views.reject_letter,        name="reject_letter"),

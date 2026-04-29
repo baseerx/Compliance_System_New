@@ -22,10 +22,8 @@ import api from "../../api/axios";
 
 interface Letter {
   id: number;
-  ref_no: string;
   subject: string;
-  sender?: string;
-  receiver?: string;
+  department?: string;
   category: string;
   status: string;
   priority: string;
@@ -57,10 +55,8 @@ const FilteredDocs: React.FC = () => {
     }
     const search = searchTerm.toLowerCase();
     const filtered = letters.filter((letter) =>
-      letter.ref_no?.toLowerCase().includes(search) ||
       letter.subject?.toLowerCase().includes(search) ||
-      letter.sender?.toLowerCase().includes(search) ||
-      letter.receiver?.toLowerCase().includes(search) ||
+      letter.department?.toLowerCase().includes(search) ||
       letter.category?.toLowerCase().includes(search) ||
       letter.status?.toLowerCase().includes(search) ||
       letter.priority?.toLowerCase().includes(search) ||
@@ -75,13 +71,17 @@ const FilteredDocs: React.FC = () => {
 
       const userStr = localStorage.getItem("user");
       let userIsSuperAdmin = false;
+      let userIsDirector = false;
 
       if (userStr) {
         const user = JSON.parse(userStr);
-        userIsSuperAdmin =
-          user.superadmin === 1 ||
-          user.superadmin === true ||
-          user.is_superuser === true;
+
+        const isSuperuser = user.is_superuser === true || user.superadmin === 1 || user.superadmin === true;
+        const isStaff     = user.is_staff === true;
+
+        userIsSuperAdmin = isSuperuser && !isStaff;
+        userIsDirector   = isSuperuser && isStaff;
+
         setIsSuperAdmin(userIsSuperAdmin);
       }
 
@@ -225,7 +225,7 @@ const FilteredDocs: React.FC = () => {
         <Box sx={{ mb: 3 }}>
           <TextField
             fullWidth
-            placeholder="Search by Ref No, Subject, Sender, Receiver, Category, Status, Priority, or Created By..."
+            placeholder="Search by Subject, Department, Category, Status, Priority, or Created By..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             InputProps={{
@@ -253,7 +253,7 @@ const FilteredDocs: React.FC = () => {
           <Table>
             <TableHead>
               <TableRow sx={{ backgroundColor: "#1a237e" }}>
-                {["Ref No", "Subject", "Sender", "Receiver", "Category", "Status", "Priority", "Due Date", "Created By"].map(h => (
+                {[ "Subject", "Department", "Category", "Status", "Priority", "Due Date", "Created By"].map(h => (
                   <TableCell key={h} sx={{ color: "white", fontWeight: "bold" }}>{h}</TableCell>
                 ))}
               </TableRow>
@@ -287,16 +287,12 @@ const FilteredDocs: React.FC = () => {
                         "&:hover": { backgroundColor: "#e3f2fd !important" },
                       }}
                     >
-                      <TableCell sx={{ fontWeight: 500, color: "#1a237e" }}>
-                        {letter.ref_no}
-                      </TableCell>
 
                       <TableCell sx={{ maxWidth: 200 }}>
                         <Typography variant="body2" noWrap>{letter.subject}</Typography>
                       </TableCell>
 
-                      <TableCell>{letter.sender || "—"}</TableCell>
-                      <TableCell>{letter.receiver || "—"}</TableCell>
+                      <TableCell>{letter.department || "—"}</TableCell>
 
                       <TableCell>
                         <Chip label={letter.category} size="small" sx={{ backgroundColor: "#e0e0e0", fontWeight: 500 }} />

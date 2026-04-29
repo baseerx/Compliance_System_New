@@ -3,7 +3,7 @@ from django.utils import timezone
 from datetime import date as date_type
 import re, json
 
-from .models import Letter, Notification, Log, LetterCycle, Category
+from .models import Letter, Notification, Log, LetterCycle, Category, LetterComment
 from department.models import Department
 
 
@@ -31,8 +31,7 @@ MAX_FILE_SIZE_MB = 5
 
 
 class LetterSerializer(serializers.ModelSerializer):
-    sender_name        = serializers.CharField(source="sender.name",            read_only=True)
-    receiver_name      = serializers.CharField(source="receiver.name",          read_only=True)
+    department_name    = serializers.CharField(source="department.name",          read_only=True)
     assigned_to_name   = serializers.CharField(source="assigned_to.username",   read_only=True)
     assigned_head_name = serializers.CharField(source="assigned_head.username", read_only=True)
     created_by_name    = serializers.CharField(source="created_by.username",    read_only=True)
@@ -43,8 +42,7 @@ class LetterSerializer(serializers.ModelSerializer):
         model  = Letter
         fields = "__all__"
         extra_kwargs = {
-            "sender":        {"write_only": True},
-            "receiver":      {"write_only": True},
+            "department":    {"required": True},
             "assigned_to":   {"write_only": True, "required": False},
             "assigned_head": {"write_only": True, "required": False},
             "created_by":    {"write_only": True, "required": False},
@@ -116,9 +114,7 @@ class LetterSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-
-        data["sender_name"]        = instance.sender.name        if instance.sender        else None
-        data["receiver_name"]      = instance.receiver.name      if instance.receiver      else None
+        data["department"]         = instance.department.name if instance.department else None
         data["assigned_to_name"]   = instance.assigned_to.username   if instance.assigned_to   else None
         data["assigned_head_name"] = instance.assigned_head.username if instance.assigned_head  else None
         data["created_by_name"]    = instance.created_by.username    if instance.created_by     else None
@@ -172,3 +168,12 @@ class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model  = Category
         fields = ["id", "name"]
+
+
+class LetterCommentSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source="user.username", read_only=True)
+
+    class Meta:
+        model  = LetterComment
+        fields = ["id", "letter", "user", "username", "comment", "created_at"]
+        read_only_fields = ["id", "user", "created_at"]        

@@ -134,11 +134,10 @@ DATABASES = {
         'NAME': 'Compliance_System',  # Replace with your actual database name
         'USER': 'sa',
         'PASSWORD': 'As@100',
-        'HOST': 'DESKTOP-1IIMFKC\SQLEXPRESS',
+        'HOST': 'DESKTOP-MD8V8H2\SQLEXPRESS',
         'OPTIONS': {
             'driver': 'ODBC Driver 17 for SQL Server',  # Ensure you have the correct ODBC driver installed
-            'charset': 'utf8mb4',  # Optional, adjust as needed
-            'extra_params': 'TrustServerCertificate'  # Optional, adjust as needed
+             # Optional, adjust as needed
         },
 
     }

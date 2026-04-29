@@ -11,13 +11,14 @@ import json, os, jwt
 from django.contrib.auth import get_user_model
 User = get_user_model()
 
-from .models import Letter, LetterCycle, Log, Notification, Category
+from .models import Letter, LetterCycle, Log, Notification, Category, LetterComment
 from .serializers import (
     LetterSerializer,
     LetterCycleSerializer,
     LogSerializer,
     NotificationSerializer,
     CategorySerializer,
+    LetterCommentSerializer,
 )
 
 ALLOWED_FILE_EXTENSIONS = {".pdf", ".docx", ".doc", ".jpg", ".jpeg", ".png"}
@@ -81,6 +82,12 @@ def create_letter(request):
     try:
         data = request.data.copy()
         username = data.pop("username", None)
+        # After data = request.data.copy(), add:
+        if data.get("department"):
+            try:
+                data["department"] = int(data["department"])
+            except (ValueError, TypeError):
+                return Response({"department": ["Invalid department ID."]}, status=400)
         if isinstance(username, list) and username:
             username = username[0]
         data.pop("current_date", None)
@@ -261,7 +268,6 @@ def reject_letter(request, pk):
         import traceback; traceback.print_exc()
         return Response({"error": str(e)}, status=500)
 
-
 @api_view(["GET"])
 def list_letters(request):
     try:
@@ -269,10 +275,24 @@ def list_letters(request):
         if user is None:
             return Response({"error": "Authentication required."}, status=401)
 
-        if user.is_superuser:
-            letters = Letter.objects.filter(assigned_head=user, status="pending" ,is_active=True)
+        # Super Admin (superuser + NOT staff) → all letters
+        if user.is_superuser and not user.is_staff:
+            letters = Letter.objects.filter(is_active=True).select_related(
+                'department', 'created_by', 'assigned_to', 'assigned_head'
+            )
+
+        # Director/Superuser (superuser + staff) → letters where they are the assigned head
+        elif user.is_superuser and user.is_staff:
+            letters = Letter.objects.filter(
+                is_active=True,
+                assigned_head=user  # ← user.id == assigned_head_id
+            ).select_related('department', 'created_by', 'assigned_to', 'assigned_head')
+
+        # Regular user → only their assigned letters
         else:
-            letters = Letter.objects.filter(assigned_to=user ,is_active=True)
+            letters = Letter.objects.filter(assigned_to=user, is_active=True).select_related(
+                'department', 'created_by', 'assigned_to', 'assigned_head'
+            )
 
         data = []
         for letter in letters:
@@ -282,17 +302,18 @@ def list_letters(request):
                 "id":               letter.id,
                 "ref_no":           letter.ref_no,
                 "subject":          letter.subject,
-                "sender":           letter.sender.name   if letter.sender   else "N/A",
-                "receiver":         letter.receiver.name if letter.receiver else "N/A",
+                "department": letter.department.name if letter.department else "N/A",
                 "category":         letter.category,
                 "priority":         letter.priority,
                 "file":             letter.file.url if letter.file else None,
-                "created_by":       letter.created_by.username    if letter.created_by    else "N/A",
-                "assigned_to":      letter.assigned_to.username   if letter.assigned_to   else None,
+                "created_by":       letter.created_by.username if letter.created_by else "N/A",
+                "assigned_to":      letter.assigned_to.username if letter.assigned_to else None,
                 "assigned_head":    letter.assigned_head.username if letter.assigned_head else None,
                 "recurrence_type":  letter.recurrence_type,
                 "recurrence_value": letter.recurrence_value,
+                "created_at":       letter.created_at.isoformat(),
             }
+
             if cycles.exists():
                 for cycle in cycles:
                     data.append({
@@ -316,9 +337,9 @@ def list_letters(request):
         return Response(data)
 
     except Exception as e:
-        import traceback; traceback.print_exc()
+        import traceback
+        traceback.print_exc()
         return Response({"error": str(e)}, status=500)
-
 
 @api_view(["GET"])
 def get_letter(request, pk):
@@ -345,6 +366,12 @@ def update_letter(request, pk):
         data.pop("username", None)
         data.pop("current_date", None)
 
+        if data.get("department"):
+            try:
+                data["department"] = int(data["department"])
+            except (ValueError, TypeError):
+                return Response({"department": ["Invalid department ID."]}, status=400)
+
         raw_meta = data.get("recurrence_metadata")
         if raw_meta:
             try:
@@ -359,8 +386,8 @@ def update_letter(request, pk):
             if file_error:
                 return Response({"file": [file_error]}, status=400)
 
-        if letter.status == "draft":
-            data["status"] = "pending"
+        if letter.status in ("draft", "rejected", "pending"):
+                data["status"] = "pending"
 
         serializer = LetterSerializer(letter, data=data, partial=True)
         if serializer.is_valid():
@@ -387,18 +414,18 @@ def update_letter(request, pk):
         import traceback; traceback.print_exc()
         return Response({"error": str(e)}, status=500)
 
-
 @api_view(["GET"])
 def get_all_letters(request):
     try:
         user = _get_user_from_request(request)
         if user is None:
             return Response({"error": "Authentication required."}, status=401)
-        if not user.is_superuser:
+        
+        if not user.is_superuser or user.is_staff:
             return Response({"error": "Admin access required."}, status=403)
 
         letters = Letter.objects.filter(is_active=True).select_related(
-            'sender', 'receiver', 'created_by', 'assigned_to', 'assigned_head'
+            'department', 'created_by', 'assigned_to', 'assigned_head'
         )
         data = []
         for letter in letters:
@@ -408,8 +435,7 @@ def get_all_letters(request):
                 "id":               letter.id,
                 "ref_no":           letter.ref_no,
                 "subject":          letter.subject,
-                "sender":           letter.sender.name   if letter.sender   else "N/A",
-                "receiver":         letter.receiver.name if letter.receiver else "N/A",
+                "department":       letter.department.name if letter.department else "N/A", 
                 "category":         letter.category,
                 "priority":         letter.priority,
                 "file":             letter.file.url if letter.file else None,
@@ -658,9 +684,78 @@ def get_auth_users(request):
             User.objects
             .filter(is_active=True)
             .order_by("is_superuser", "username")
-            .values("id", "username", "is_superuser", "first_name", "last_name")
+            .values("id", "username", "is_superuser", "is_staff", "first_name", "last_name")  # add is_staff
         )
         return Response(list(users))
     except Exception as e:
         import traceback; traceback.print_exc()
         return Response({"error": str(e)}, status=500)
+    
+
+@api_view(["GET", "POST"])
+def letter_comments(request, pk):
+    letter = get_object_or_404(Letter, pk=pk)
+    user   = _get_user_from_request(request)
+
+    if not user:
+        return Response({"error": "Authentication required."}, status=401)
+
+    if request.method == "GET":
+        comments = LetterComment.objects.filter(letter=letter).select_related("user")
+        data = [
+            {
+                "id":         c.id,
+                "letter_id":  c.letter_id,
+                "user_id":    c.user_id,
+                "username":   c.user.username,
+                "comment":    c.comment,
+                "created_at": c.created_at.isoformat(),
+            }
+            for c in comments
+        ]
+        return Response(data)
+
+    if request.method == "POST":
+        try:
+            if not user.is_superuser:
+                return Response({"error": "Only admins can comment."}, status=403)
+
+            text = request.data.get("comment", "").strip()
+            if not text:
+                return Response({"error": "Comment cannot be empty."}, status=400)
+
+            comment = LetterComment.objects.create(letter=letter, user=user, comment=text)
+
+            preview = text[:80] + ("..." if len(text) > 80 else "")
+            ref     = letter.ref_no or str(letter.id)
+            subject = letter.subject or "No Subject"
+
+            recipients = set()
+            if letter.assigned_head and letter.assigned_head != user:
+                recipients.add(letter.assigned_head)
+            if letter.assigned_to and letter.assigned_to != user:
+                recipients.add(letter.assigned_to)
+
+            for recipient in recipients:
+                Notification.objects.create(
+                    user=recipient,
+                    letter=letter,
+                    title="New Admin Comment",
+                    message="{} commented on Task {} - '{}': {}".format(
+                        user.username, ref, subject, preview
+                    ),
+                )
+
+            return Response({
+                "id":         comment.id,
+                "letter_id":  comment.letter_id,
+                "user_id":    comment.user_id,
+                "username":   comment.user.username,
+                "comment":    comment.comment,
+                "created_at": comment.created_at.isoformat(),
+            }, status=201)
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return Response({"error": str(e)}, status=500)

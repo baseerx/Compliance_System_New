@@ -21,12 +21,7 @@ RECURRENCE_PATTERN_CHOICES = [
 
 class Letter(models.Model):
 
-    sender = models.ForeignKey(
-        Department, related_name="sent_letters", on_delete=models.CASCADE
-    )
-    receiver = models.ForeignKey(
-        Department, related_name="received_letters", on_delete=models.CASCADE
-    )
+    department = models.ForeignKey(Department, on_delete=models.CASCADE)
 
     category = models.CharField(max_length=50)
     priority = models.CharField(max_length=50)
@@ -97,12 +92,12 @@ class Letter(models.Model):
         if self.recurrence_type == "monthly_day":
             day = (self.recurrence_metadata or {}).get("day", 1)
             next_month = base + relativedelta(months=1)
-            # clamp to last day of that month (e.g. day=31 in Feb → Feb 28)
+        
             last_day = (next_month.replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(days=1)
             return next_month.replace(day=min(day, last_day.day))
 
         if self.recurrence_type == "first_weekday":
-            # weekday stored as Python convention: 0=Mon, 6=Sun
+
             weekday = (self.recurrence_metadata or {}).get("weekday", 0)
             first_of_next = (base + relativedelta(months=1)).replace(day=1)
             days_until = (weekday - first_of_next.weekday()) % 7
@@ -195,3 +190,16 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name
+    
+class LetterComment(models.Model):
+    letter     = models.ForeignKey(Letter, on_delete=models.CASCADE, related_name="comments")
+    user       = models.ForeignKey(User, on_delete=models.CASCADE)  # ← change this
+    comment    = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering   = ["-created_at"]
+        db_table   = "documents_comment"   # good practice to set explicitly
+
+    def __str__(self):
+        return f"Comment by {self.user.username} on Letter {self.letter_id}"

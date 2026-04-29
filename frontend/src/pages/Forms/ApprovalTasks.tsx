@@ -63,25 +63,22 @@ const ApprovalTasks: React.FC = () => {
 
 
   const fetchPendingLetters = async () => {
-    try {
-      setLoading(true);
-      const res = await api.get("/letters/");
+  try {
+    setLoading(true);
+    const res = await api.get("/letters/");
 
-      const pending = (res.data as Letter[]).filter(l =>
-        l.assigned_head && (
-          (l as any).status === "pending" || 
-          (l as any).status?.toLowerCase() === "pending"
-        )
-      );
+    const pending = (res.data as any[]).filter(l =>
+      l.status === "pending" && l.assigned_head
+    );
 
-      setLetters(pending);
-      setFiltered(pending);
-    } catch (err: any) {
-      Swal.fire("Error", err.response?.data?.error || "Unable to fetch pending tasks", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
+    setLetters(pending);
+    setFiltered(pending);
+  } catch (err: any) {
+    Swal.fire("Error", err.response?.data?.error || "Unable to fetch pending tasks", "error");
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => { fetchPendingLetters(); }, []);
 
@@ -89,7 +86,7 @@ const ApprovalTasks: React.FC = () => {
   useEffect(() => {
     if (!search) { setFiltered(letters); return; }
     setFiltered(letters.filter(l =>
-      `${l.ref_no} ${l.subject} ${l.sender} ${l.receiver} ${l.category}`
+      ` ${l.subject} ${l.sender} ${l.receiver} ${l.category}`
         .toLowerCase().includes(search.toLowerCase())
     ));
   }, [search, letters]);
@@ -212,7 +209,7 @@ const ApprovalTasks: React.FC = () => {
         <Paper elevation={0} sx={{ p: 2, mb: 3, borderRadius: 3, border: "1px solid #e0e0e0" }}>
           <TextField
             fullWidth
-            placeholder="Search by Ref No, Subject, Sender, Receiver, or Category…"
+            placeholder="Search by Subject, Sender, Receiver, or Category…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             InputProps={{
@@ -237,7 +234,7 @@ const ApprovalTasks: React.FC = () => {
               <TableHead>
                 <TableRow sx={{ backgroundColor: "#1a237e" }}>
                   {[
-                    "Ref No", "Subject", "Sender", "Receiver", "Category",
+                     "Subject", "Sender", "Receiver", "Category",
                     "Priority", "Due Date", "Assigned To", "Created By", "Decision", "Actions",
                   ].map(h => (
                     <TableCell key={h} sx={{ color: "white", fontWeight: "bold", fontSize: "0.875rem", whiteSpace: "nowrap" }}>
@@ -298,11 +295,6 @@ const ApprovalTasks: React.FC = () => {
                           borderLeft: "4px solid #ff9800",
                         }}>
 
-                        <TableCell>
-                          <Typography variant="body2" sx={{ fontWeight: 700, color: "#1a237e" }}>
-                            {letter.ref_no}
-                          </Typography>
-                        </TableCell>
 
                         <TableCell sx={{ maxWidth: 220 }}>
                           <Tooltip title={letter.subject}>

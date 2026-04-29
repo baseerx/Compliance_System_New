@@ -32,7 +32,9 @@ import TaskView from "./pages/Forms/TaskView";
 import DocumentLogs from "./pages/Forms/DocumentLogs";
 import HandleStatus from "./pages/Forms/HandleStatus";
 import FilteredDocs from "./pages/Dashboard/FilteredDocs";
+import DepartmentTasks from "./pages/Dashboard/DepartmentTasks";
 import ApprovalTasks from "./pages/Forms/ApprovalTasks";
+import UpdateTasks from "./pages/Forms/UpdateTasks";
 
 export default function App() {
   return (
@@ -45,6 +47,8 @@ export default function App() {
             <Route element={<AppLayout />}>
               <Route path="/dashboard" index element={<Home />} />
               <Route path="/letters/filtered/:filterType" element={<FilteredDocs />} />
+              <Route path="/dashboard/department/:deptName" element={<DepartmentTasks />} />
+
 
 
               {/* Others Page */}
@@ -61,6 +65,7 @@ export default function App() {
               <Route path="/history/:id" element={<DocumentLogs />} />
               <Route path="/handle_status" element={<HandleStatus/>} />
               <Route path="/approval_tasks" element={<ApprovalTasks/>} />
+              <Route path="/letters/:id/edit" element={<UpdateTasks/>} />
                           
 
               {/* Tables */}

@@ -16,8 +16,7 @@ interface RecurrenceMetadata {
 interface TaskFormData {
   ref_no: string;
   subject: string;
-  sender: string;
-  receiver: string;
+  department: string;
   category: string;
   recurrence_type: string;
   recurrence_value: number;
@@ -79,7 +78,7 @@ export default function TaskForm() {
   const { user } = useAuth();
 
   const emptyForm: TaskFormData = {
-    ref_no: "", subject: "", sender: "", receiver: "",
+    ref_no: "", subject: "",  department: "",
     category: "", recurrence_type: "", recurrence_value: 1,
     recurrence_metadata: {}, due_date: "", priority: "",
     assigned_to: "", assigned_head: "",
@@ -239,8 +238,7 @@ export default function TaskForm() {
       err.subject = "Emojis are not allowed in the subject";
     }
 
-    if (!formData.sender)        err.sender        = "Sender is required";
-    if (!formData.receiver)      err.receiver      = "Receiver is required";
+    if (!formData.department)        err.department        = "Department is required";
     if (!formData.category)      err.category      = "Category is required";
     if (!formData.priority)      err.priority      = "Priority is required";
     if (!formData.assigned_to)   err.assigned_to   = "Assigned user is required";
@@ -407,22 +405,15 @@ export default function TaskForm() {
               </div>
 
               <div>
-                <label className={lc}>Sender Department <span className="text-red-500">*</span></label>
-                <select name="sender" value={formData.sender} onChange={handleChange} className={ic("sender")}>
-                  <option value="">Select Sender Department</option>
+                <label className={lc}> Department <span className="text-red-500">*</span></label>
+                <select name="department" value={formData.department} onChange={handleChange} className={ic("department")}>
+                  <option value="">Select Department</option>
                   {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                 </select>
-                <ErrMsg field="sender" />
+                <ErrMsg field="department" />
               </div>
 
-              <div>
-                <label className={lc}>Receiver Department <span className="text-red-500">*</span></label>
-                <select name="receiver" value={formData.receiver} onChange={handleChange} className={ic("receiver")}>
-                  <option value="">Select Receiver Department</option>
-                  {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                </select>
-                <ErrMsg field="receiver" />
-              </div>
+
 
               <div>
                 <label className={lc}>Category <span className="text-red-500">*</span></label>

@@ -115,7 +115,7 @@ export default function UserDropdown() {
               </svg>
               Account settings
             </DropdownItem>
-          </li> */}
+          </li> 
           <li>
             <DropdownItem
               onItemClick={closeDropdown}
@@ -140,7 +140,7 @@ export default function UserDropdown() {
               </svg>
               Contact support | Baseer AD (IT)
             </DropdownItem>
-          </li>
+          </li>*/}
         </ul>
         <Button
                   onClick={logoutUser}
