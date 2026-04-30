@@ -147,14 +147,14 @@ WSGI_APPLICATION = 'hris.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': os.getenv('DB_ENGINE', 'mssql'),
-        'NAME': os.getenv('DB_NAME', 'Compliance_System'),
-        'USER': os.getenv('DB_USER', 'sa'),
-        'PASSWORD': os.getenv('DB_PASSWORD', 'Sa@157'),
-        'HOST': os.getenv('DB_HOST', '192.168.157.51'),
-        'PORT': os.getenv('DB_PORT', '9090'),
+        'ENGINE': os.getenv('DB_ENGINE'),
+        'NAME': os.getenv('DB_NAME'),
+        'USER': os.getenv('DB_USER'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'HOST': os.getenv('DB_HOST'),
+        'PORT': os.getenv('DB_PORT'),
         'OPTIONS': {
-            'driver': os.getenv('DB_DRIVER', 'ODBC Driver 17 for SQL Server'),
+            'driver': os.getenv('DB_DRIVER'),
         },
 
     }
