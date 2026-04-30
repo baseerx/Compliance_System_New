@@ -1,7 +1,6 @@
 # Virtual environments
 backend/venv/
 backend/.venv/
-backend/db.py
 venv/
 
 # Env files
@@ -10,5 +9,4 @@ frontend/.env
 .env
 
 # Python file
-backend/db.py
 frontend/.env
