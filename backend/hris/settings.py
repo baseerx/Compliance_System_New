@@ -10,10 +10,27 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+def _load_env_file(env_path):
+    if not env_path.exists():
+        return
+
+    with env_path.open('r', encoding='utf-8') as env_file:
+        for line in env_file:
+            line = line.strip()
+            if not line or line.startswith('#') or '=' not in line:
+                continue
+            key, value = line.split('=', 1)
+            os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+
+
+_load_env_file(BASE_DIR / '.env')
 
 
 # Quick-start development settings - unsuitable for production
@@ -130,15 +147,14 @@ WSGI_APPLICATION = 'hris.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'mssql',
-        'NAME': 'Compliance_System',  # Replace with your actual database name
-        'USER': 'sa',
-        'PASSWORD': 'Sa@157',
-        'HOST': '192.168.157.51',
-        'PORT': '9090',
+        'ENGINE': os.getenv('DB_ENGINE', 'mssql'),
+        'NAME': os.getenv('DB_NAME', 'Compliance_System'),
+        'USER': os.getenv('DB_USER', 'sa'),
+        'PASSWORD': os.getenv('DB_PASSWORD', 'Sa@157'),
+        'HOST': os.getenv('DB_HOST', '192.168.157.51'),
+        'PORT': os.getenv('DB_PORT', '9090'),
         'OPTIONS': {
-            'driver': 'ODBC Driver 17 for SQL Server',  # Ensure you have the correct ODBC driver installed
-             # Optional, adjust as needed
+            'driver': os.getenv('DB_DRIVER', 'ODBC Driver 17 for SQL Server'),
         },
 
     }
