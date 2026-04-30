@@ -1,6 +1,7 @@
 # Virtual environments
 backend/venv/
 backend/.venv/
+backend/db.py
 venv/
 
 # Env files
