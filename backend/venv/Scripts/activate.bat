@@ -8,7 +8,7 @@ if defined _OLD_CODEPAGE (
     "%SystemRoot%\System32\chcp.com" 65001 > nul
 )
 
-set VIRTUAL_ENV=C:\Users\ISMO\Documents\Compliance_System_New\backend\venv
+set VIRTUAL_ENV=D:\ISMO\compliance_system_new\Compliance_System_New\backend\venv
 
 if not defined PROMPT set PROMPT=$P$G
 

@@ -133,8 +133,9 @@ DATABASES = {
         'ENGINE': 'mssql',
         'NAME': 'Compliance_System',  # Replace with your actual database name
         'USER': 'sa',
-        'PASSWORD': 'As@100',
-        'HOST': 'DESKTOP-MD8V8H2\SQLEXPRESS',
+        'PASSWORD': 'Sa@157',
+        'HOST': '192.168.157.51',
+        'PORT': '9090',
         'OPTIONS': {
             'driver': 'ODBC Driver 17 for SQL Server',  # Ensure you have the correct ODBC driver installed
              # Optional, adjust as needed
